@@ -1,53 +1,33 @@
-# Moonlight Forwarder Generator — contexto inicial
+# Moonlight Forwarder Generator — contexto do MVP
 
-## Workspace oficial
+## Objetivo
 
-Trabalhe exclusivamente neste diretório:
+O MFG é um Companion Windows para preparar jogos de PC para abertura direta pelo menu HOME de um Nintendo Switch com CFW:
 
 ```text
-C:\Users\thayr\OneDrive\Documentos\Forwarder para moonlight
+Forwarder NSP → Moonlight-Switch → Sunshine → Executável
 ```
 
-Use esse diretório como workspace gravável. Não implemente alterações na pasta temporária do Codex.
+Não há Agent, named pipe ou launcher intermediário no MVP.
 
-## Objetivo do produto
+## Responsabilidades do Companion
 
-Criar um ecossistema para iniciar jogos de PC pelo menu HOME do Nintendo Switch, usando Forwarder NSP → Moonlight → Sunshine → Agent local. O Agent recebe um `GameId`, resolve o executável configurado e inicia o jogo automaticamente.
+- **Sunshine Manager**: instalar, validar, iniciar e configurar o Sunshine.
+- **Library Manager**: manter nome, executável, aplicação Sunshine, favorito Moonlight, NSP e status de cada jogo.
+- **NSP Generator**: criar o NSP com os parâmetros do favorito Moonlight-Switch e copiá-lo para o cartão SD quando disponível.
 
-## Estado atual do MVP
+## Fluxo do usuário
 
-- Solution .NET 8: `MoonlightForwarderGenerator.sln`.
-- Projetos ativos:
-  - `src/MFG.App`: interface WPF.
-  - `src/MFG.Agent`: processo local em segundo plano.
-  - `src/MFG.Common`: contratos e cliente de comunicação.
-- Comunicação App → Agent: named pipe local `MoonlightForwarderGenerator.Agent`, JSON delimitado por quebra de linha.
-- Banco: SQLite com EF Core em `%LocalAppData%\MoonlightForwarderGenerator\mfg.db`.
-- Tabela `Games`: `Id`, `ExecutablePath`, `Arguments`, `CreatedAt`, `UpdatedAt`.
-- A App permite cadastrar `ID + executável` e solicitar a execução pelo ID.
-- O Agent implementa os comandos `register-game` e `launch-game`.
-- Tabela `SunshineInstallations`: `Id`, `IsInstalled`, `ExecutablePath`, `LastCheckedAt`.
-- Na inicialização, o Agent procura o Sunshine em diretórios conhecidos e no Registro do Windows, atualizando essa tabela.
-- A validação anterior encontrou o Sunshine em `C:\Program Files\Sunshine\sunshine.exe`.
-- Compilação mais recente: `dotnet build MoonlightForwarderGenerator.sln --no-restore`, sem avisos nem erros.
-- A App consulta o status do Sunshine ao abrir e exibe um aviso quando ele está ausente.
-- A instalação guiada exige confirmação explícita, consulta a release estável oficial no GitHub, seleciona o instalador Windows compatível, abre o instalador interativo e atualiza o status após o encerramento.
-- Ao iniciar (e também após a instalação guiada), o Agent garante que o Sunshine esteja em execução e verifica as portas TCP padrão `47989` e `47990` antes de informar que está pronto para conexão local.
-- O projeto inclui `MFG.Launcher`, executável de linha de comando para encaminhar `launch-game <GameId>` ao Agent; ele será usado como comando das aplicações criadas no Sunshine.
-- Ao cadastrar um jogo, o Agent salva o registro SQLite e cria ou atualiza automaticamente a aplicação `MFG - <GameId>` no `apps.json` do Sunshine, apontando para o launcher.
+1. Selecionar um executável.
+2. O Companion prepara a aplicação correspondente no Sunshine.
+3. O Companion cria ou sincroniza o favorito do Moonlight-Switch.
+4. O Companion gera o NSP.
+5. Com o SD conectado, copia a saída para `SD:\switch\`; caso contrário, salva localmente.
 
-## Instalação guiada do Sunshine
+## Identificadores
 
-- A App usa `get-sunshine-status` para consultar o Agent ao iniciar.
-- Quando ausente, o botão **Instalar Sunshine** pede confirmação explícita antes de enviar `install-sunshine`.
-- O Agent consulta a API de releases de `LizardByte/Sunshine`, ignora drafts e pre-releases, e escolhe o instalador oficial `.exe` (com fallback `.msi`) para AMD64 ou ARM64.
-- O download é temporário; o instalador é aberto de forma interativa, permitindo UAC. Ao encerrar, o Agent redetecta o Sunshine e registra o resultado no SQLite.
+O identificador usado pelo forwarder é o ID do favorito do Moonlight-Switch, associado a uma aplicação do Sunshine. O UUID interno da biblioteca existe apenas para o Companion.
 
-## Regras de implementação
+## Health check
 
-- Não incorporar uma versão fixa nem URL fixa do Sunshine: usar a API de releases do GitHub e ignorar pre-releases.
-- Aceitar somente assets oficiais de instalador Windows; preferir AMD64 em máquinas x64.
-- Tratar erros de rede, download, cancelamento do usuário e instalador encerrado com código diferente de zero.
-- Manter a instalação dependente de confirmação explícita na UI.
-- Não implementar atualização automática nesta etapa; somente detecção e instalação quando ausente.
-- Após alterações, compilar a solution e validar o fluxo sem instalar software real sem uma confirmação humana na UI.
+Ao iniciar, o Companion verifica Sunshine instalado/em execução, executáveis existentes, aplicações Sunshine, favoritos Moonlight-Switch e NSPs gerados. A interface usa linguagem simples, por exemplo “Preparando jogo”, sem expor esses detalhes técnicos.

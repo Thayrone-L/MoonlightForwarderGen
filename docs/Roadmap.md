@@ -1,6 +1,6 @@
 # Roadmap
 
-1. Validar a comunicação App → Agent e a inicialização de um executável.
-2. Adicionar contratos para comandos vindos do Switch.
-3. Integrar Moonlight e Sunshine.
-4. Criar o gerador de NSPs e descoberta de jogos.
+1. Concluir Sunshine Manager: instalação, início e sincronização de aplicações.
+2. Implementar MoonlightSwitchManager: cartão SD e favoritos em `settings.json`.
+3. Implementar NSP Generator e biblioteca de saídas.
+4. Executar health check completo e tutorial de pareamento.

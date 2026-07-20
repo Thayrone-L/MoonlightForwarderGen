@@ -1,26 +1,31 @@
 # Moonlight Forwarder Generator
 
-MVP para iniciar aplicações no PC a partir de comandos recebidos por um agente local. A arquitetura final integrará forwarders de Nintendo Switch, Moonlight e Sunshine.
+O MFG e um Companion para preparar jogos de PC para abertura direta no Nintendo Switch:
 
-## MVP atual
-
-- `MFG.Agent`: processo em segundo plano que escuta comandos em um named pipe local e persiste jogos em SQLite.
-- `MFG.App`: interface WPF para cadastrar um ID e executável, ou iniciar um jogo já cadastrado pelo ID.
-- `MFG.Common`: contratos e cliente de comunicação compartilhados.
-
-## Executar a prova de conceito
-
-Em dois terminais, na raiz da solução:
-
-```powershell
-dotnet run --project src/MFG.Agent
-dotnet run --project src/MFG.App
+```text
+Forwarder NSP -> Moonlight-Switch -> Sunshine -> jogo
 ```
 
-Cadastre um ID (por exemplo, `notepad`) e o caminho de um executável. Em seguida, informe o mesmo ID na seção de execução. Os dados são armazenados em `%LocalAppData%\MoonlightForwarderGenerator\mfg.db`.
+O MVP nao usa Agent, named pipes ou launcher intermediario. O Companion centraliza o registro de jogos, a sincronizacao com Sunshine, os favoritos do Moonlight-Switch e a geracao de NSP.
 
-Ao iniciar, o Agent também verifica se o Sunshine está instalado. Ele procura nos diretórios de instalação usuais e no Registro do Windows e salva o estado e o caminho encontrado na tabela `SunshineInstallations` do mesmo banco.
+## Estado atual
 
-## Estrutura planejada
+- `MFG.App`: Companion WPF, ponto unico de interacao.
+- `MFG.Common`: modelos compartilhados da biblioteca.
+- Biblioteca SQLite em `%LocalAppData%\MoonlightForwarderGenerator\mfg.db`.
+- O cadastro armazena nome, executavel, aplicacao Sunshine, favorito Moonlight, NSP e status.
+- Quando Sunshine esta instalado, o cadastro cria ou atualiza automaticamente a aplicacao correspondente no `apps.json`.
+- O Companion detecta o cartao SD quando contem a instalacao esperada do Moonlight-Switch.
+- Cada jogo recebe um Title ID unico. O gerador reconstrui um NSP novo com metadados, icone e argumentos `--ip`, `--appid` e `--appname` para o Moonlight.
+- O NSP e mantido em `%LocalAppData%\MoonlightForwarderGenerator\forwarders`; com o cartao SD detectado, uma copia atomica tambem e enviada para `SD:\switch`.
+- O backend usa `@tootallnate/hacbrewpack` e `@tootallnate/nacp`, derivados do projeto MIT [TooTallNate/switch-tools](https://github.com/TooTallNate/switch-tools). Consulte `tools/nsp-generator/THIRD-PARTY-NOTICES.md`.
+- A chave fornecida pelo usuario fica protegida pelo Windows; para gerar, ela e decriptada apenas em uma pasta temporaria aleatoria, removida ao final.
+- A sincronizacao de favoritos no `settings.json` do Moonlight-Switch ainda depende de confirmar o formato de um arquivo real desse aplicativo.
+- **Configurar Switch** abre o assistente para importar a chave e explicar o pareamento inicial.
+- **Preparar Sunshine** instala Sunshine somente apos confirmacao, cria a configuracao inicial sem sobrescrever aplicacoes existentes e inicia o servico.
 
-Os projetos `MFG.Core`, `MFG.Protocol`, `MFG.NSPGenerator` e `MFG.Installer` serão adicionados após a validação do MVP. Os testes correspondentes também serão criados nessa etapa.
+## Executar
+
+```powershell
+dotnet run --project src/MFG.App
+```

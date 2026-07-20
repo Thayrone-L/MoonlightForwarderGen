@@ -1,6 +1,12 @@
 # Build output
 [Bb]in/
 [Oo]bj/
+tools/nsp-generator/node_modules/
+switch/**/build/
+switch/**/*.elf
+switch/**/*.map
+switch/**/*.nacp
+switch/**/*.nro
 
 # IDEs
 .vs/

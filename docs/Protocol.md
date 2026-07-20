@@ -1,26 +1,12 @@
-# Protocolo
+# Contratos de integração
 
-O MVP usa um named pipe local chamado `MoonlightForwarderGenerator.Agent` e mensagens JSON delimitadas por quebra de linha.
+O MFG não possui protocolo interno de comandos. A integração é feita por arquivos e argumentos:
 
-Exemplos de comandos:
+| Componente | Contrato |
+| --- | --- |
+| Sunshine | Aplicação registrada no `apps.json` ou pela Web UI. |
+| Moonlight-Switch | Favorito em `SD:\switch\Moonlight-Switch\settings.json`. |
+| Forwarder NSP | Argumentos `--ip`, `--appid` e `--appname`. |
+| Biblioteca MFG | UUID interno, executável, aplicação Sunshine, ID do favorito e caminho do NSP. |
 
-```json
-{ "name": "register-game", "gameId": "notepad", "executablePath": "C:\\Windows\\System32\\notepad.exe" }
-{ "name": "launch-game", "gameId": "notepad" }
-{ "name": "get-sunshine-status" }
-{ "name": "install-sunshine" }
-```
-
-## MFG.Launcher
-
-O `MFG.Launcher` é o executável chamado pelo Sunshine para acionar um jogo. Ele encaminha o ID ao Agent pelo named pipe e devolve um código de saída apropriado ao Sunshine:
-
-```text
-MFG.Launcher.exe launch-game <GameId>
-```
-
-O `MFG.Agent` precisa estar em execução antes do launcher ser chamado.
-
-## Cadastro no Sunshine
-
-Ao receber `register-game`, o Agent também cria ou atualiza uma entrada `MFG - <GameId>` no `apps.json` configurado pelo Sunshine. O comando da entrada chama o `MFG.Launcher` copiado para a pasta do Agent.
+O Companion deve preservar configurações e favoritos que não foram criados por ele.

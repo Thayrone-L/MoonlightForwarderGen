@@ -1,0 +1,11 @@
+{
+  "name": "mfg-nsp-generator",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Local NSP generator used by MFG Companion",
+  "dependencies": {
+    "@tootallnate/hacbrewpack": "0.0.3",
+    "@tootallnate/nacp": "0.2.1"
+  }
+}

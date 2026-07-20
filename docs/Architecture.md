@@ -1,9 +1,15 @@
 # Arquitetura
 
-O MVP separa UI, comunicação compartilhada e execução local. O `MFG.App` envia comandos pelo named pipe local ao `MFG.Agent`, que valida o comando e inicia o processo correspondente.
+O MFG é um único Companion WPF. Não há Agent nem comunicação por named pipe.
 
-Na inicialização, o Agent detecta o Sunshine e mantém a tabela `SunshineInstallations` sincronizada com o caminho atual do executável. Quando instalado e ainda inativo, o Agent inicia o processo e espera pela disponibilidade local das portas TCP padrão de streaming (`47989`) e da interface web (`47990`).
+```text
+Switch → Forwarder NSP → Moonlight-Switch → Sunshine → Executável
+```
 
-Quando a App solicita `get-sunshine-status`, o Agent atualiza e retorna esse estado. Para `install-sunshine`, o Agent consulta a API oficial de releases do GitHub, baixa apenas o instalador Windows compatível da release estável mais recente, abre-o de forma interativa e executa novamente a detecção ao término.
+O Companion gerencia Sunshine, biblioteca local, favoritos do Moonlight-Switch, geração de NSP e health checks. O identificador usado pelo NSP é o favorito do Moonlight-Switch associado à aplicação do Sunshine.
 
-No próximo estágio, `MFG.Protocol` definirá os comandos recebidos pela cadeia Switch → Moonlight → Sunshine, e `MFG.Core` centralizará a resolução de jogos.
+Ao registrar um jogo, o Companion cria ou atualiza sua aplicação no `apps.json` do Sunshine. A entrada mantém o nome escolhido pelo usuário, o executável e seu diretório de trabalho; demais aplicações são preservadas.
+
+O Companion detecta um cartão SD removível que contenha `switch\Moonlight-Switch\settings.json`. Essa detecção é o pré-requisito para a sincronização dos favoritos e a cópia futura dos NSPs.
+
+O módulo NSP reserva um Title ID único por jogo e monta os argumentos `--ip`, `--appid` e `--appname`. A construção binária usa um template e um backend externo compatível, isolados da biblioteca e da interface.
