@@ -1,5 +1,7 @@
+using System.IO;
 using System.Windows;
 using MFG.App.Services;
+using MFG.Common.Setup;
 
 namespace MFG.App;
 
@@ -9,29 +11,35 @@ public partial class OnboardingWindow : Window
     private readonly SunshineManager _sunshine = new();
     private readonly MoonlightSwitchManager _switch = new();
     private readonly SetupStateStore _setupState = new();
-    private int _step;
-    private bool _computerReady;
+    private readonly OnboardingFlow _flow;
 
     public OnboardingWindow()
     {
         InitializeComponent();
-        _computerReady = _sunshine.Check().IsReady;
+        var saved = _setupState.Load();
+        var switchReady = IsSwitchReady(_switch.DetectSdCard());
+        _flow = new OnboardingFlow(_sunshine.Check().IsReady, _keyStorage.IsConfigured, switchReady, saved.Step);
         RefreshStep();
     }
 
     private void RefreshStep()
     {
-        ComputerStep.Visibility = _step == 0 ? Visibility.Visible : Visibility.Collapsed;
-        KeyStep.Visibility = _step == 1 ? Visibility.Visible : Visibility.Collapsed;
-        PairingStep.Visibility = _step == 2 ? Visibility.Visible : Visibility.Collapsed;
-        FinishStep.Visibility = _step == 3 ? Visibility.Visible : Visibility.Collapsed;
-        StepTitleText.Text = _step switch { 0 => "Preparar computador", 1 => "Arquivo de chave", 2 => "Conectar Switch", _ => "Tudo pronto" };
-        StepIndicatorText.Text = $"Passo {_step + 1} de 4";
-        BackButton.Visibility = _step == 0 ? Visibility.Collapsed : Visibility.Visible;
-        NextButton.Content = _step == 3 ? "Concluir" : "Continuar";
-        NextButton.IsEnabled = _step switch { 0 => _computerReady, 1 => _keyStorage.IsConfigured, _ => true };
+        var sdCard = _switch.DetectSdCard();
+        _flow.UpdateReadiness(_sunshine.Check().IsReady, _keyStorage.IsConfigured, IsSwitchReady(sdCard));
+        ComputerStep.Visibility = _flow.Step == OnboardingStep.Computer ? Visibility.Visible : Visibility.Collapsed;
+        KeyStep.Visibility = _flow.Step == OnboardingStep.Key ? Visibility.Visible : Visibility.Collapsed;
+        PairingStep.Visibility = _flow.Step == OnboardingStep.Switch ? Visibility.Visible : Visibility.Collapsed;
+        FinishStep.Visibility = _flow.Step == OnboardingStep.Finish ? Visibility.Visible : Visibility.Collapsed;
+        StepTitleText.Text = _flow.Step switch { OnboardingStep.Computer => "Preparar computador", OnboardingStep.Key => "Arquivo de chave", OnboardingStep.Switch => "Conectar Switch", _ => "Tudo pronto" };
+        StepIndicatorText.Text = $"Passo {(int)_flow.Step + 1} de 4";
+        BackButton.Visibility = _flow.CanGoBack ? Visibility.Visible : Visibility.Collapsed;
+        LaterButton.Visibility = _flow.Step == OnboardingStep.Finish ? Visibility.Collapsed : Visibility.Visible;
+        NextButton.Content = _flow.Step == OnboardingStep.Finish ? "Concluir" : "Continuar";
+        NextButton.IsEnabled = _flow.CanContinue;
         KeyStatusText.Text = _keyStorage.IsConfigured ? "Arquivo guardado com segurança neste computador." : "Selecione o arquivo para continuar.";
-        SwitchStatusText.Text = _switch.DetectSdCard().Message;
+        SwitchStatusText.Text = sdCard.IsDetected && !IsSwitchReady(sdCard)
+            ? "Cartão SD encontrado, mas o Moonlight-Switch ainda não foi configurado e pareado. Conclua as etapas no console e tente novamente."
+            : sdCard.Message;
     }
 
     private async void PrepareComputer_Click(object sender, RoutedEventArgs e)
@@ -41,7 +49,6 @@ public partial class OnboardingWindow : Window
             PrepareComputerButton.IsEnabled = false;
             ComputerStatusText.Text = "Preparando o Sunshine...";
             var health = await _sunshine.PrepareAsync();
-            _computerReady = health.IsReady;
             ComputerStatusText.Text = health.IsReady ? "Computador pronto." : health.Message;
         }
         catch (Exception exception)
@@ -73,9 +80,23 @@ public partial class OnboardingWindow : Window
 
     private async void Next_Click(object sender, RoutedEventArgs e)
     {
-        if (_step == 3) { await _setupState.MarkCompletedAsync(); DialogResult = true; return; }
-        _step++; RefreshStep();
+        if (_flow.Step == OnboardingStep.Finish) { await _setupState.MarkCompletedAsync(); DialogResult = true; return; }
+        if (_flow.MoveNext()) await _setupState.SaveProgressAsync(_flow.Step);
+        RefreshStep();
     }
 
-    private void Back_Click(object sender, RoutedEventArgs e) { _step--; RefreshStep(); }
+    private async void Back_Click(object sender, RoutedEventArgs e)
+    {
+        if (_flow.MoveBack()) await _setupState.SaveProgressAsync(_flow.Step);
+        RefreshStep();
+    }
+
+    private async void Later_Click(object sender, RoutedEventArgs e)
+    {
+        await _setupState.SaveProgressAsync(_flow.Step);
+        DialogResult = false;
+    }
+
+    private static bool IsSwitchReady(SwitchSdCardStatus status) =>
+        status.IsDetected && !string.IsNullOrWhiteSpace(status.SettingsPath) && File.Exists(status.SettingsPath);
 }

@@ -1,3 +1,10 @@
 # Testes
 
-Os projetos de teste serão adicionados junto dos respectivos módulos: `MFG.Core.Tests`, `MFG.Protocol.Tests` e `MFG.NSPGenerator.Tests`.
+Execute toda a suíte a partir da raiz do repositório:
+
+```powershell
+dotnet test MoonlightForwarderGenerator.sln
+```
+
+- `MFG.Common.Tests`: regras de domínio e fluxos independentes da interface e do Windows.
+- Os próximos projetos cobrirão integrações do Companion e o backend do gerador de NSP.
