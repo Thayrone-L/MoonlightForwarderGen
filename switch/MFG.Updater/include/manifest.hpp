@@ -9,6 +9,7 @@ struct Forwarder {
     std::string title_id;
     std::string name;
     std::string nsp_file_name;
+    std::string cover_file_name;
     std::string sha256;
     bool file_available = false;
     bool hash_valid = false;

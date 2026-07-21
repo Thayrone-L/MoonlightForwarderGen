@@ -11,7 +11,7 @@ SOURCES     := source
 INCLUDES    := include
 APP_TITLE   := Moonlight Forwarder
 APP_AUTHOR  := MFG
-APP_VERSION := 0.5.0
+APP_VERSION := 0.5.4
 ICON        := icon.jpg
 
 ROMFS         := lib/borealis/resources

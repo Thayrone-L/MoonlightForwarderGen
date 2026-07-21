@@ -30,7 +30,7 @@ public sealed class NspForwarderService
             publisher);
         var generated = await _generator.GenerateAsync(plan, cancellationToken);
         var delivery = await _delivery.DeliverAsync(generated.OutputPath, cancellationToken);
-        await _library.MarkForwarderGeneratedAsync(game.Id, generated.OutputPath);
+        await _library.MarkForwarderGeneratedAsync(game.Id, generated.OutputPath, iconPath);
         return new NspForwarderResult(generated, delivery);
     }
 }

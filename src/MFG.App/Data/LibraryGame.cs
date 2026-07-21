@@ -11,6 +11,7 @@ public sealed class LibraryGame
     public string? MoonlightFavoriteId { get; set; }
     public string NspTitleId { get; set; } = null!;
     public string? NspPath { get; set; }
+    public string? CoverPath { get; set; }
     public GameStatus Status { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }

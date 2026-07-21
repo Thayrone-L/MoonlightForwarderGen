@@ -47,7 +47,7 @@ void initialize() {
     mkdir(LogDirectory, 0777);
     rotate_if_needed();
     log_file = std::fopen(Path, "ab");
-    write("INFO", "MFG Updater 0.5.0 iniciado.");
+    write("INFO", "MFG Updater 0.5.4 iniciado.");
     const u32 firmware_version = hosversionGet();
     char firmware[48]{};
     std::snprintf(firmware, sizeof(firmware), "Firmware detectado: %u.%u.%u.",

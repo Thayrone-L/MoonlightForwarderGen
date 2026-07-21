@@ -88,7 +88,38 @@ public sealed class GameDiscoveryService
             }
         }
         await database.SaveChangesAsync(cancellationToken);
+        await RefreshRegisteredGameMetadataAsync(database, cancellationToken);
         return new GameDiscoveryResult(games.Count, added, updated, metadataUpdated);
+    }
+
+    private static async Task RefreshRegisteredGameMetadataAsync(MfgDbContext database, CancellationToken cancellationToken)
+    {
+        var registeredGames = await database.Games.ToListAsync(cancellationToken);
+        if (registeredGames.Count == 0)
+            return;
+
+        var discoveredGames = await database.DiscoveredGames
+            .Where(game => game.ExecutablePath != null)
+            .ToListAsync(cancellationToken);
+        var iconProvider = new NspGameIconProvider();
+        foreach (var registered in registeredGames)
+        {
+            var metadata = discoveredGames.FirstOrDefault(game =>
+                string.Equals(game.ExecutablePath, registered.ExecutablePath, StringComparison.OrdinalIgnoreCase));
+            if (metadata is null)
+                continue;
+
+            var executableStem = Path.GetFileNameWithoutExtension(registered.ExecutablePath);
+            var nameLooksInternal = registered.Name.Length <= 6 ||
+                string.Equals(NormalizeName(registered.Name), NormalizeName(executableStem), StringComparison.OrdinalIgnoreCase);
+            if (nameLooksInternal && !string.IsNullOrWhiteSpace(metadata.Name))
+                registered.Name = metadata.Name;
+
+            if (!string.IsNullOrWhiteSpace(metadata.CoverPath) && File.Exists(metadata.CoverPath))
+                registered.CoverPath = await iconProvider.GetPathAsync(metadata.CoverPath, metadata.Name, cancellationToken);
+            registered.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<DiscoveredGame>> GetInstalledGamesAsync()
@@ -214,7 +245,7 @@ public sealed class GameDiscoveryService
             games.Add(new InstalledGameDiscovery(
                 IsKnownEmulatorExecutable(executablePath) ? GameSource.Emulator : GameSource.LocalScan,
                 executablePath,
-                GetExecutableDisplayName(executablePath),
+                GetLocalGameDisplayName(candidate.Key, executablePath),
                 candidate.Key,
                 executablePath));
         }
@@ -402,6 +433,20 @@ public sealed class GameDiscoveryService
             : !string.IsNullOrWhiteSpace(info.FileDescription)
                 ? info.FileDescription
                 : Path.GetFileNameWithoutExtension(path);
+    }
+
+    private static string GetLocalGameDisplayName(string gameRoot, string executablePath)
+    {
+        var executableName = GetExecutableDisplayName(executablePath).Trim();
+        var directoryName = Path.GetFileName(gameRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)).Trim();
+        if (string.IsNullOrWhiteSpace(directoryName))
+            return executableName;
+
+        // Executáveis frequentemente usam siglas internas (como GoWR), enquanto a
+        // pasta de instalação preserva o nome comercial usado pelas lojas.
+        var executableLooksInternal = executableName.Length <= 6 ||
+            (!executableName.Contains(' ') && directoryName.Contains(' ') && directoryName.Length > executableName.Length);
+        return executableLooksInternal ? directoryName : executableName;
     }
 
     private static readonly string[] KnownNonGameTerms =

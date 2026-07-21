@@ -58,6 +58,8 @@ public sealed class NspDeliveryService
 
         var destinationDirectory = GetSdForwarderDirectory(sdCard.RootPath);
         Directory.CreateDirectory(destinationDirectory);
+        var coverDirectory = Path.Combine(destinationDirectory, "covers");
+        Directory.CreateDirectory(coverDirectory);
         var copied = 0;
         var activeGames = games.Where(game => !string.IsNullOrWhiteSpace(game.NspPath) && File.Exists(game.NspPath)).ToList();
         var expectedFiles = new HashSet<string>(activeGames.Select(game => Path.GetFileName(game.NspPath!)), StringComparer.OrdinalIgnoreCase);
@@ -70,17 +72,35 @@ public sealed class NspDeliveryService
                 await CopyAndVerifyAsync(localNspPath, destinationPath, cancellationToken);
                 copied++;
             }
+
+            if (!string.IsNullOrWhiteSpace(game.CoverPath) && File.Exists(game.CoverPath))
+            {
+                var coverDestination = Path.Combine(coverDirectory, $"{game.NspTitleId}.jpg");
+                if (!FilesMatch(game.CoverPath, coverDestination))
+                    await CopyAndVerifyAsync(game.CoverPath, coverDestination, cancellationToken);
+            }
         }
 
         foreach (var orphan in Directory.EnumerateFiles(destinationDirectory, "MFG - *.nsp", SearchOption.TopDirectoryOnly)
                      .Where(path => !expectedFiles.Contains(Path.GetFileName(path))))
             File.Delete(orphan);
 
-        var manifest = new SdLibraryManifest(1, DateTimeOffset.UtcNow, activeGames.Select(game => new SdLibraryManifestGame(
+        var expectedCovers = activeGames
+            .Where(game => !string.IsNullOrWhiteSpace(game.CoverPath) && File.Exists(game.CoverPath))
+            .Select(game => $"{game.NspTitleId}.jpg")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var orphanCover in Directory.EnumerateFiles(coverDirectory, "*.jpg", SearchOption.TopDirectoryOnly)
+                     .Where(path => !expectedCovers.Contains(Path.GetFileName(path))))
+            File.Delete(orphanCover);
+
+        var manifest = new SdLibraryManifest(2, DateTimeOffset.UtcNow, activeGames.Select(game => new SdLibraryManifestGame(
             game.NspTitleId,
             game.Name,
             Path.GetFileName(game.NspPath!),
-            ComputeSha256(game.NspPath!))).ToList(), removedForwarders.Select(item => item.TitleId).ToList());
+            ComputeSha256(game.NspPath!),
+            !string.IsNullOrWhiteSpace(game.CoverPath) && File.Exists(game.CoverPath)
+                ? $"covers/{game.NspTitleId}.jpg"
+                : null)).ToList(), removedForwarders.Select(item => item.TitleId).ToList());
         await WriteManifestAtomicallyAsync(Path.Combine(destinationDirectory, "manifest.json"),
             JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase }), cancellationToken);
         return new SdLibrarySyncResult(true, activeGames.Count, copied, copied == 0 ? "Atalhos no SD já estão atualizados." : "Atalhos sincronizados com o cartão SD.");
@@ -254,4 +274,4 @@ public sealed record NspDeliveryResult(
 
 public sealed record SdLibrarySyncResult(bool SdDetected, int Total, int Copied, string Message);
 internal sealed record SdLibraryManifest(int SchemaVersion, DateTimeOffset UpdatedAt, IReadOnlyList<SdLibraryManifestGame> Games, IReadOnlyList<string> RemovedTitleIds);
-internal sealed record SdLibraryManifestGame(string TitleId, string Name, string NspFileName, string Sha256);
+internal sealed record SdLibraryManifestGame(string TitleId, string Name, string NspFileName, string Sha256, string? CoverFileName);

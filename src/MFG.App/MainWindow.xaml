@@ -8,14 +8,44 @@
   <Grid>
     <Grid.Resources>
       <converters:CoverPathToImageSourceConverter x:Key="CoverPathConverter" />
+      <Style x:Key="TopBarButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="Button">
+              <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="8"
+                      Padding="{TemplateBinding Padding}">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="Chrome" Property="Background" Value="#242B38" />
+                  <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter TargetName="Chrome" Property="Background" Value="#30284F" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
     </Grid.Resources>
     <Grid.RowDefinitions>
-      <RowDefinition Height="Auto" />
+      <RowDefinition Height="52" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
 
-    <Menu>
+    <Menu Visibility="Collapsed">
       <MenuItem Header="_Biblioteca">
+        <MenuItem Header="Visualizar no Switch" Click="OpenSwitchPreview_Click" />
+        <Separator />
         <MenuItem Header="Procurar jogos novamente" Click="RefreshInstalledGames_Click" />
         <MenuItem Header="Verificar atalhos" Click="RunHealthCheck_Click" />
       </MenuItem>
@@ -25,6 +55,37 @@
         <MenuItem Header="Abrir pasta de logs" Click="OpenLogs_Click" />
       </MenuItem>
     </Menu>
+
+    <Border Background="#0C0F15" BorderBrush="#202633" BorderThickness="0,0,0,1">
+      <Grid Margin="22,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <Border Height="34" Padding="13,0" Background="#30284F" CornerRadius="8">
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="3" />
+              </Grid.RowDefinitions>
+              <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Text="Biblioteca" />
+              <Border Grid.Row="1" Width="24" Height="3" Background="{StaticResource AccentBrush}" CornerRadius="2" />
+            </Grid>
+          </Border>
+          <Button Margin="6,0,0,0" Style="{StaticResource TopBarButton}"
+                  Click="OpenSwitchPreview_Click" Content="Preview do Switch" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button Style="{StaticResource TopBarButton}" Click="UpdateSwitch_Click" Content="↻  Atualizar" />
+          <Border Width="1" Height="20" Margin="8,0" Background="#303847" />
+          <Button Style="{StaticResource TopBarButton}" Click="OpenSetup_Click" Content="Configurações" />
+          <Button Width="38" Padding="0" Style="{StaticResource TopBarButton}" Click="OpenLogs_Click"
+                  Content="•••" ToolTip="Abrir pasta de logs" />
+        </StackPanel>
+      </Grid>
+    </Border>
 
     <Grid Grid.Row="1" Margin="34,28,34,26">
       <Grid.RowDefinitions>
@@ -44,13 +105,13 @@
           <TextBlock Margin="0,6,0,0" Foreground="{StaticResource MutedTextBrush}"
                      FontSize="14" Text="Escolha um jogo. O resto acontece sozinho." />
         </StackPanel>
-        <Border Grid.Column="1" Width="360" VerticalAlignment="Center" Padding="12,7"
+        <Border Grid.Column="1" MinWidth="360" MaxWidth="520" VerticalAlignment="Center" Padding="12,7"
                 Background="#172B27" BorderBrush="#285044" BorderThickness="1" CornerRadius="14">
           <StackPanel Orientation="Horizontal">
             <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center"
                      Fill="{StaticResource SuccessBrush}" />
-            <TextBlock x:Name="ReadinessText" MaxWidth="360" Foreground="#BDEBD9"
-                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+            <TextBlock x:Name="ReadinessText" MaxWidth="480" Foreground="#BDEBD9"
+                       TextWrapping="NoWrap" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
           </StackPanel>
         </Border>
       </Grid>
@@ -74,7 +135,7 @@
                          Foreground="{StaticResource MutedTextBrush}" Text="Steam e Epic" />
               <TextBlock FontSize="17" FontWeight="SemiBold" Text="Biblioteca" />
             </DockPanel>
-            <ListBox x:Name="InstalledGamesList" Grid.Row="1"
+            <ListBox x:Name="InstalledGamesList" Grid.Row="1" IsEnabled="False"
                      SelectionChanged="InstalledGamesList_SelectionChanged"
                      Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
               <ListBox.ItemContainerStyle>
@@ -135,7 +196,7 @@
               </ListBox.ItemTemplate>
             </ListBox>
             <Border x:Name="GamesLoadingOverlay" Grid.Row="1"
-                    Background="#D9191E28" CornerRadius="9" Visibility="Collapsed">
+                    Background="#F2191E28" CornerRadius="9" Visibility="Visible">
               <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Grid Width="42" Height="42" HorizontalAlignment="Center">
                   <Ellipse Stroke="#343B49" StrokeThickness="4" />
@@ -186,7 +247,28 @@
             </StackPanel>
 
             <StackPanel Grid.Row="1">
-              <Button Height="48" Style="{StaticResource PrimaryButton}" Click="PrepareGame_Click"
+              <Border x:Name="ShortcutCreatedBanner" Margin="0,0,0,12" Padding="14,12"
+                      Background="#172B27" BorderBrush="#34705C" BorderThickness="1"
+                      CornerRadius="10" Visibility="Collapsed">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="32" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <Border Width="24" Height="24" VerticalAlignment="Top" Background="{StaticResource SuccessBrush}"
+                          CornerRadius="12">
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#10221C"
+                               FontSize="15" FontWeight="Bold" Text="✓" />
+                  </Border>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock x:Name="ShortcutCreatedTitle" Foreground="#BDEBD9" FontWeight="SemiBold"
+                               Text="Atalho criado com sucesso" />
+                    <TextBlock x:Name="ShortcutCreatedDetail" Margin="0,3,0,0" Foreground="#8FD0B8"
+                               FontSize="12" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+              <Button x:Name="PrepareGameButton" Height="48" Style="{StaticResource PrimaryButton}" Click="PrepareGame_Click"
                       Content="Adicionar ao Switch" />
               <Expander Margin="0,12,0,0" Foreground="{StaticResource MutedTextBrush}"
                         Header="Não encontrou seu jogo?">

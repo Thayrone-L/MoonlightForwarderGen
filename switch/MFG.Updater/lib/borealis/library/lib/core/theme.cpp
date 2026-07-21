@@ -119,7 +119,7 @@ ThemeValues::ThemeValues(std::initializer_list<std::pair<std::string, NVGcolor>>
 
 void ThemeValues::addColor(std::string name, NVGcolor color)
 {
-    this->values.insert(std::make_pair(name, color));
+    this->values[name] = color;
 }
 
 NVGcolor ThemeValues::getColor(std::string name)

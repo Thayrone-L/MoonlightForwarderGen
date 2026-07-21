@@ -15,7 +15,7 @@ public sealed class LibraryManager
     private readonly NspDeliveryService _nspDelivery = new();
     private readonly MoonlightAppIdResolver _moonlightAppIds = new();
 
-    public async Task<GameRegistration> RegisterAsync(string name, string executablePath)
+    public async Task<GameRegistration> RegisterAsync(string name, string executablePath, string? coverPath = null)
     {
         name = name.Trim();
         executablePath = executablePath.Trim();
@@ -50,6 +50,7 @@ public sealed class LibraryManager
 
         game.Name = name;
         game.ExecutablePath = executablePath;
+        game.CoverPath = string.IsNullOrWhiteSpace(coverPath) || !File.Exists(coverPath) ? null : coverPath;
         game.SunshineApplicationName = name;
         game.Status = GameStatus.NeedsSunshineSync;
         game.UpdatedAt = now;
@@ -112,6 +113,17 @@ public sealed class LibraryManager
             .OrderBy(item => item.RemovedAt)
             .ToList();
         return await _nspDelivery.SyncLibraryAsync(games, removed, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<LibraryGame>> GetSwitchPreviewGamesAsync(CancellationToken cancellationToken = default)
+    {
+        await using var database = MfgDbContext.Create();
+        var games = await database.Games
+            .AsNoTracking()
+            .Where(game => game.NspPath != null)
+            .OrderBy(game => game.Name)
+            .ToListAsync(cancellationToken);
+        return games.Where(game => File.Exists(game.NspPath)).ToList();
     }
 
     public async Task RemoveAsync(string executablePath, CancellationToken cancellationToken = default)
@@ -179,7 +191,7 @@ public sealed class LibraryManager
         return checks;
     }
 
-    public async Task MarkForwarderGeneratedAsync(Guid gameId, string nspPath)
+    public async Task MarkForwarderGeneratedAsync(Guid gameId, string nspPath, string iconPath)
     {
         if (!File.Exists(nspPath))
             throw new FileNotFoundException("O atalho gerado nao foi encontrado.", nspPath);
@@ -188,6 +200,7 @@ public sealed class LibraryManager
         var game = await database.Games.FindAsync(gameId)
             ?? throw new InvalidOperationException("O jogo nao existe mais na biblioteca.");
         game.NspPath = nspPath;
+        game.CoverPath = File.Exists(iconPath) ? iconPath : game.CoverPath;
         game.Status = GameStatus.ReadyForForwarder;
         game.UpdatedAt = DateTimeOffset.UtcNow;
         await database.SaveChangesAsync();

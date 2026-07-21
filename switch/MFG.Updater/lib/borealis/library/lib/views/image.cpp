@@ -217,15 +217,15 @@ void Image::invalidateImageBounds()
         case ImageScalingType::CROP:
             if (viewAspectRatio < imageAspectRatio)
             {
-                this->imageHeight = this->originalImageHeight;
+                this->imageHeight = height;
                 this->imageWidth  = this->imageHeight * imageAspectRatio;
                 this->imageX      = (width - this->imageWidth) / 2.0F;
                 this->imageY      = 0;
             }
             else
             {
-                this->imageWidth  = this->originalImageWidth;
-                this->imageHeight = this->imageWidth * imageAspectRatio;
+                this->imageWidth  = width;
+                this->imageHeight = this->imageWidth / imageAspectRatio;
                 this->imageY      = (height - this->imageHeight) / 2.0F;
                 this->imageX      = 0;
             }

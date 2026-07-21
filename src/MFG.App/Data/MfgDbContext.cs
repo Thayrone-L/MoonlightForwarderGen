@@ -40,12 +40,14 @@ public sealed class MfgDbContext : DbContext
                 MoonlightFavoriteId TEXT NULL,
                 NspTitleId TEXT NULL,
                 NspPath TEXT NULL,
+                CoverPath TEXT NULL,
                 Status INTEGER NOT NULL,
                 CreatedAt TEXT NOT NULL,
                 UpdatedAt TEXT NOT NULL
             );
             """);
         await EnsureNspTitleIdColumnAsync(database);
+        await EnsureLibraryGameColumnAsync(database, "CoverPath");
         await database.Database.ExecuteSqlRawAsync("""
             CREATE TABLE IF NOT EXISTS SecureKeySettings (
                 Id INTEGER NOT NULL CONSTRAINT PK_SecureKeySettings PRIMARY KEY,
@@ -111,6 +113,11 @@ public sealed class MfgDbContext : DbContext
 
     private static async Task EnsureNspTitleIdColumnAsync(MfgDbContext database)
     {
+        await EnsureLibraryGameColumnAsync(database, "NspTitleId");
+    }
+
+    private static async Task EnsureLibraryGameColumnAsync(MfgDbContext database, string columnName)
+    {
         await using var connection = database.Database.GetDbConnection();
         await connection.OpenAsync();
         var exists = false;
@@ -120,7 +127,7 @@ public sealed class MfgDbContext : DbContext
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                if (string.Equals(reader.GetString(1), "NspTitleId", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase))
                 {
                     exists = true;
                     break;
@@ -131,7 +138,13 @@ public sealed class MfgDbContext : DbContext
         if (!exists)
         {
             await connection.CloseAsync();
-            await database.Database.ExecuteSqlRawAsync("ALTER TABLE LibraryGames ADD COLUMN NspTitleId TEXT NULL;");
+            var migrationSql = columnName switch
+            {
+                "NspTitleId" => "ALTER TABLE LibraryGames ADD COLUMN NspTitleId TEXT NULL;",
+                "CoverPath" => "ALTER TABLE LibraryGames ADD COLUMN CoverPath TEXT NULL;",
+                _ => throw new InvalidOperationException($"Coluna de migração desconhecida: {columnName}")
+            };
+            await database.Database.ExecuteSqlRawAsync(migrationSql);
         }
     }
 }

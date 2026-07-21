@@ -4,6 +4,8 @@ using System.IO;
 using System.Collections.ObjectModel;
 using MFG.App.Data;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 namespace MFG.App;
 
@@ -25,6 +27,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => EnableDarkTitleBar();
         InstalledGamesList.ItemsSource = _installedGames;
         Loaded += async (_, _) =>
         {
@@ -58,10 +61,27 @@ public partial class MainWindow : Window
             }
             finally
             {
+                GamesLoadingOverlay.Visibility = Visibility.Collapsed;
+                InstalledGamesList.IsEnabled = true;
                 RefreshReadiness();
             }
         };
     }
+
+    private void EnableDarkTitleBar()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        var enabled = 1;
+        if (DwmSetWindowAttribute(handle, 20, ref enabled, sizeof(int)) != 0)
+            DwmSetWindowAttribute(handle, 19, ref enabled, sizeof(int));
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(
+        IntPtr windowHandle,
+        int attribute,
+        ref int attributeValue,
+        int attributeSize);
 
     private void RefreshReadiness()
     {
@@ -110,6 +130,11 @@ public partial class MainWindow : Window
         RefreshReadiness();
     }
 
+    private void OpenSwitchPreview_Click(object sender, RoutedEventArgs e)
+    {
+        new SwitchPreviewWindow { Owner = this }.ShowDialog();
+    }
+
     private void BrowseExecutable_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
@@ -130,8 +155,9 @@ public partial class MainWindow : Window
     {
         try
         {
+            HideShortcutCreatedState();
             StatusText.Text = "Preparando jogo...";
-            var game = await _libraryManager.RegisterAsync(GameNameTextBox.Text, ExecutablePathTextBox.Text);
+            var game = await _libraryManager.RegisterAsync(GameNameTextBox.Text, ExecutablePathTextBox.Text, _selectedCoverPath);
             if (game.Status != MFG.Common.Library.GameStatus.SunshineApplicationReady)
             {
                 StatusText.Text = $"'{game.Name}' foi adicionado. Use “Preparar computador” para concluir.";
@@ -147,6 +173,7 @@ public partial class MainWindow : Window
                 _moonlightSwitchManager.GetMoonlightNroPath(),
                 iconPath);
             await _libraryManager.SyncSdLibraryAsync();
+            ShowShortcutCreatedState(game.Name, result.Delivery.CopiedToSdCard);
             StatusText.Text = result.Delivery.CopiedToSdCard
                 ? $"'{game.Name}' está pronto. NSP copiado para: {result.Delivery.SdCardPath}"
                 : $"'{game.Name}' está pronto. NSP salvo em: {result.Delivery.LocalPath}";
@@ -166,7 +193,7 @@ public partial class MainWindow : Window
                     {
                         StatusText.Text = "Solicitando permissao do Windows...";
                         await _libraryManager.GrantSunshineConfigurationAccessAsync();
-                        var game = await _libraryManager.RegisterAsync(GameNameTextBox.Text, ExecutablePathTextBox.Text);
+                        var game = await _libraryManager.RegisterAsync(GameNameTextBox.Text, ExecutablePathTextBox.Text, _selectedCoverPath);
                         StatusText.Text = $"'{game.Name}' foi preparado para o Sunshine.";
                         return;
                     }
@@ -220,6 +247,32 @@ public partial class MainWindow : Window
         await RefreshInstalledGamesAsync(true);
     }
 
+    private async void UpdateSwitch_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            StatusText.Text = "Atualizando o complemento e a biblioteca do Switch...";
+            var companion = await _switchCompanionDelivery.EnsureInstalledAsync();
+            if (!companion.SdDetected)
+            {
+                StatusText.Text = companion.Message;
+                RefreshReadiness();
+                return;
+            }
+
+            var library = await _libraryManager.SyncSdLibraryAsync();
+            StatusText.Text = companion.Copied
+                ? $"Complemento atualizado em {companion.DestinationPath}. {library.Message} Feche e abra novamente o NRO no Switch."
+                : $"{companion.Message} {library.Message}";
+            RefreshReadiness();
+        }
+        catch (Exception exception)
+        {
+            AppLog.Error("Falha ao atualizar o complemento do Switch.", exception);
+            StatusText.Text = $"Não foi possível atualizar o Switch: {exception.Message}";
+        }
+    }
+
     private void OpenLogs_Click(object sender, RoutedEventArgs e)
     {
         Directory.CreateDirectory(AppLog.LogDirectory);
@@ -254,6 +307,10 @@ public partial class MainWindow : Window
                 _installedGames.Add(group);
             if (_installedGames.Count > 0)
                 InstalledGamesList.SelectedIndex = 0;
+
+            // A descoberta pode encontrar um nome comercial e uma capa melhores
+            // para atalhos já existentes; reflita isso no SD na mesma execução.
+            await _libraryManager.SyncSdLibraryAsync();
 
             if (!showResult)
                 return;
@@ -294,12 +351,29 @@ public partial class MainWindow : Window
 
     private void PopulateGameFields(DiscoveredGame game)
     {
+        HideShortcutCreatedState();
         GameNameTextBox.Text = game.Name;
         ExecutablePathTextBox.Text = game.ExecutablePath ?? string.Empty;
         _selectedCoverPath = game.CoverPath;
         StatusText.Text = string.IsNullOrWhiteSpace(game.ExecutablePath)
             ? $"{game.Name} foi selecionado. Escolha o executavel do jogo para continuar."
             : $"{game.Name} foi selecionado e esta pronto para ser preparado.";
+    }
+
+    private void ShowShortcutCreatedState(string gameName, bool copiedToSdCard)
+    {
+        ShortcutCreatedTitle.Text = $"Atalho de {gameName} criado";
+        ShortcutCreatedDetail.Text = copiedToSdCard
+            ? "Já está no cartão SD e pronto para ser adicionado pelo Switch."
+            : "Foi salvo no computador. Conecte o cartão SD e clique em Atualizar.";
+        ShortcutCreatedBanner.Visibility = Visibility.Visible;
+        PrepareGameButton.Content = "Criar novamente";
+    }
+
+    private void HideShortcutCreatedState()
+    {
+        ShortcutCreatedBanner.Visibility = Visibility.Collapsed;
+        PrepareGameButton.Content = "Adicionar ao Switch";
     }
 
     private async Task RefreshLibraryHealthAsync(bool showResult)

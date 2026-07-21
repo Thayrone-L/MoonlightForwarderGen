@@ -84,6 +84,14 @@ bool is_safe_file_name(const std::string& value) {
            value.find('\\') == std::string::npos && value != "." && value != "..";
 }
 
+bool is_safe_cover_name(const std::string& value) {
+    return value.size() > 11 && value.rfind("covers/", 0) == 0 &&
+           value.find("..") == std::string::npos &&
+           value.find('\\') == std::string::npos &&
+           value.find('/', 7) == std::string::npos &&
+           value.ends_with(".jpg");
+}
+
 bool is_hex(const std::string& value, std::size_t expected_length) {
     if (value.size() != expected_length)
         return false;
@@ -122,7 +130,8 @@ ManifestResult load_manifest(const std::string& path, const std::string& forward
 
     json_object* schema = nullptr;
     if (!json_object_object_get_ex(root.get(), "schemaVersion", &schema) ||
-        !json_object_is_type(schema, json_type_int) || json_object_get_int(schema) != 1) {
+        !json_object_is_type(schema, json_type_int) ||
+        (json_object_get_int(schema) != 1 && json_object_get_int(schema) != 2)) {
         result.error = "Versao de manifesto nao suportada. Sincronize novamente pelo MFG.";
         log::error(result.error);
         return result;
@@ -154,6 +163,16 @@ ManifestResult load_manifest(const std::string& path, const std::string& forward
             !is_safe_file_name(forwarder.nsp_file_name)) {
             result.error = "O manifesto contem uma entrada ausente ou insegura.";
             return result;
+        }
+        json_object* cover = nullptr;
+        if (json_object_object_get_ex(item, "coverFileName", &cover) &&
+            !json_object_is_type(cover, json_type_null)) {
+            if (!json_object_is_type(cover, json_type_string) ||
+                !is_safe_cover_name(json_object_get_string(cover))) {
+                result.error = "O manifesto contem um caminho de capa inseguro.";
+                return result;
+            }
+            forwarder.cover_file_name = json_object_get_string(cover);
         }
         const std::string nsp_path = forwarder_directory + "/" + forwarder.nsp_file_name;
         forwarder.file_available = file_exists(nsp_path);
