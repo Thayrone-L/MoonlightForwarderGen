@@ -1,0 +1,39 @@
+name: Publicar release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.18.0
+          cache: npm
+          cache-dependency-path: tools/nsp-generator/package-lock.json
+      - name: Gerar pacote
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          ./scripts/Build-Release.ps1 -Version $version
+      - name: Publicar no GitHub
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = Get-ChildItem artifacts/release -File |
+            Where-Object { $_.Extension -in '.zip', '.sha256' } |
+            ForEach-Object FullName
+          gh release create '${{ github.ref_name }}' @assets `
+            --title 'Moonlight Forwarder Generator ${{ github.ref_name }}' `
+            --generate-notes `
+            --prerelease `

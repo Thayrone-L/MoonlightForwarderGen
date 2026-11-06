@@ -1,33 +1,39 @@
-# Moonlight Forwarder Generator — contexto do MVP
+# Moonlight Forwarder Generator — contexto atual
 
-## Objetivo
+**Português** | [English](MOONLIGHT_FORWARDER_GENERATOR_BRIEF.en.md)
 
-O MFG é um Companion Windows para preparar jogos de PC para abertura direta pelo menu HOME de um Nintendo Switch com CFW:
+## Produto
+
+O MFG permite abrir jogos de PC pelo menu HOME de um Nintendo Switch já preparado para homebrew:
 
 ```text
-Forwarder NSP → Moonlight-Switch → Sunshine → Executável
+Atalho HOME → Moonlight-Switch → Sunshine → jogo no PC
 ```
 
-Não há Agent, named pipe ou launcher intermediário no MVP.
+Seu objetivo é democratizar o uso do Sunshine e do Moonlight, substituindo configurações manuais e conhecimento técnico por automação segura, orientação clara e uma experiência visual acessível.
 
-## Responsabilidades do Companion
+## Componentes
 
-- **Sunshine Manager**: instalar, validar, iniciar e configurar o Sunshine.
-- **Library Manager**: manter nome, executável, aplicação Sunshine, favorito Moonlight, NSP e status de cada jogo.
-- **NSP Generator**: criar o NSP com os parâmetros do favorito Moonlight-Switch e copiá-lo para o cartão SD quando disponível.
+- `MFG.App`: Companion WPF que conduz onboarding, biblioteca, Sunshine, geração de NSP e sincronização do SD.
+- `MFG.Common`: modelos e regras independentes da interface.
+- `tools/nsp-generator`: backend Node.js e template do forwarder.
+- `switch/MFG.Updater`: homebrew que valida e instala os forwarders no menu HOME.
 
-## Fluxo do usuário
+## Estado atual
 
-1. Selecionar um executável.
-2. O Companion prepara a aplicação correspondente no Sunshine.
-3. O Companion cria ou sincroniza o favorito do Moonlight-Switch.
-4. O Companion gera o NSP.
-5. Com o SD conectado, copia a saída para `SD:\switch\`; caso contrário, salva localmente.
+- Descoberta Steam, Epic e executáveis locais.
+- Sunshine instalado e preparado com consentimento do usuário.
+- Chave protegida por DPAPI no usuário atual do Windows.
+- NSP com Title ID único, nome, capa e argumentos Moonlight.
+- Cópia para SD com verificação SHA-256 e manifesto v2.
+- MFG Updater gráfico, restrito ao formato produzido pelo projeto.
+- Onboarding retomável, testes iniciais, CI e release alpha autossuficiente.
 
-## Identificadores
+## Prioridades
 
-O identificador usado pelo forwarder é o ID do favorito do Moonlight-Switch, associado a uma aplicação do Sunshine. O UUID interno da biblioteca existe apenas para o Companion.
+1. Expandir testes de serviços e integrações.
+2. Validar a alpha em diferentes ambientes e hardware.
+3. Melhorar diagnóstico e recuperação de erros.
+4. Preparar instalador, assinatura e compatibilidade para beta.
 
-## Health check
-
-Ao iniciar, o Companion verifica Sunshine instalado/em execução, executáveis existentes, aplicações Sunshine, favoritos Moonlight-Switch e NSPs gerados. A interface usa linguagem simples, por exemplo “Preparando jogo”, sem expor esses detalhes técnicos.
+Consulte `README.md` para a jornada do usuário e `docs/README.md` para o índice técnico.

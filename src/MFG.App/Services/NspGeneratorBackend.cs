@@ -35,7 +35,9 @@ public sealed class NspGeneratorBackend
             var request = new GeneratorRequest(plan.Request, plan.MoonlightArguments, keyPath);
             await File.WriteAllTextAsync(requestPath, JsonSerializer.Serialize(request, JsonOptions), cancellationToken);
 
-            var startInfo = new ProcessStartInfo("node")
+            var bundledNodePath = Path.Combine(AppContext.BaseDirectory, "node.exe");
+            var nodeExecutable = File.Exists(bundledNodePath) ? bundledNodePath : "node";
+            var startInfo = new ProcessStartInfo(nodeExecutable)
             {
                 WorkingDirectory = toolDirectory,
                 RedirectStandardOutput = true,

@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:MFG.App.Converters"
-        Title="Preview do Switch" Width="1180" Height="720" MinWidth="820" MinHeight="520"
+        Title="{DynamicResource Preview.WindowTitle}" Width="1180" Height="720" MinWidth="820" MinHeight="520"
         WindowStartupLocation="CenterOwner" Background="#090C12">
   <Window.Resources>
     <converters:CoverPathToImageSourceConverter x:Key="CoverPathConverter" />
@@ -23,7 +23,7 @@
           </Grid.ColumnDefinitions>
           <TextBlock Margin="46,0" VerticalAlignment="Center" FontSize="27" Text="Moonlight Forwarder" />
           <TextBlock Grid.Column="1" Margin="0,0,46,0" VerticalAlignment="Center"
-                     Foreground="#55D6A0" FontSize="16" Text="Biblioteca pronta" />
+                     Foreground="#55D6A0" FontSize="16" Text="{DynamicResource Preview.LibraryReady}" />
         </Grid>
 
         <Grid Grid.Row="1" Margin="48,22">
@@ -41,9 +41,9 @@
                 <RowDefinition Height="12" />
                 <RowDefinition Height="*" />
               </Grid.RowDefinitions>
-              <TextBlock FontSize="29" FontWeight="SemiBold" Text="Seus jogos" />
+              <TextBlock FontSize="29" FontWeight="SemiBold" Text="{DynamicResource Preview.YourGames}" />
               <TextBlock Grid.Row="1" Margin="0,5,0,0" Foreground="#9CA8BA" FontSize="17"
-                         Text="Escolha um jogo. O resto acontece sozinho." />
+                         Text="{DynamicResource Main.Hero.Subtitle}" TextWrapping="Wrap" />
               <ListBox x:Name="PreviewGamesList" Grid.Row="3" ItemsSource="{Binding Games}"
                        Background="Transparent" BorderThickness="0"
                        ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -86,14 +86,14 @@
                       </Border>
                       <StackPanel Grid.Column="2" VerticalAlignment="Center">
                         <TextBlock FontSize="19" FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Margin="0,2,0,0" FontSize="14" Foreground="#55D6A0" Text="Pronto" />
+                        <TextBlock Margin="0,2,0,0" FontSize="14" Foreground="#55D6A0" Text="{DynamicResource Preview.Ready}" />
                       </StackPanel>
                     </Grid>
                   </DataTemplate>
                 </ListBox.ItemTemplate>
               </ListBox>
               <TextBlock x:Name="EmptyLibraryText" Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center"
-                         Foreground="#9CA8BA" FontSize="20" Text="Nenhum atalho preparado ainda." Visibility="Collapsed" />
+                         Foreground="#9CA8BA" FontSize="20" Text="{DynamicResource Preview.Empty}" TextWrapping="Wrap" Visibility="Collapsed" />
             </Grid>
           </Border>
 
@@ -105,28 +105,28 @@
               </Border>
               <TextBlock Width="340" Margin="0,18,0,0" HorizontalAlignment="Center" TextAlignment="Center"
                          FontSize="29" FontWeight="SemiBold" TextWrapping="Wrap"
-                         Text="{Binding SelectedItem.Name, ElementName=PreviewGamesList, FallbackValue=Tudo pronto por aqui}" />
+                         Text="{Binding SelectedItem.Name, ElementName=PreviewGamesList, FallbackValue={DynamicResource Preview.AllSet}}" />
               <TextBlock Width="340" Margin="0,12,0,26" HorizontalAlignment="Center" TextAlignment="Center"
                          Foreground="#9CA8BA" FontSize="18" TextWrapping="Wrap"
-                         Text="Pronto para virar um atalho no seu Switch." />
+                         Text="{DynamicResource Main.SelectionHint}" />
               <Border Width="340" Height="58" Background="#7C5CFC" CornerRadius="8">
                 <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"
-                           Text="Adicionar ao Switch" />
+                           Text="{DynamicResource Main.AddToSwitch}" TextWrapping="Wrap" TextAlignment="Center" />
               </Border>
             </StackPanel>
           </Border>
         </Grid>
 
         <Grid Grid.Row="2" Background="#0C0F15">
-          <TextBlock Margin="46,0" VerticalAlignment="Center" Foreground="#9CA8BA" FontSize="15" Text="A  Selecionar" />
+          <TextBlock Margin="46,0" VerticalAlignment="Center" Foreground="#9CA8BA" FontSize="15" Text="{DynamicResource Preview.Select}" />
           <TextBlock Margin="0,0,46,0" HorizontalAlignment="Right" VerticalAlignment="Center"
-                     Foreground="#9CA8BA" FontSize="15" Text="X  Atualizar     +  Sair" />
+                     Foreground="#9CA8BA" FontSize="15" Text="{DynamicResource Preview.Actions}" />
         </Grid>
       </Grid>
     </Viewbox>
     <Border VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,12,0,0" Padding="12,6"
             Background="#E6151A23" CornerRadius="12">
-      <TextBlock Foreground="#9CA8BA" Text="Prévia proporcional de 1280 × 720" />
+      <TextBlock Foreground="#9CA8BA" Text="{DynamicResource Preview.Proportional}" />
     </Border>
   </Grid>
 </Window>

@@ -1,5 +1,7 @@
 # Testes
 
+**Português** | [English](README.en.md)
+
 Execute toda a suíte a partir da raiz do repositório:
 
 ```powershell

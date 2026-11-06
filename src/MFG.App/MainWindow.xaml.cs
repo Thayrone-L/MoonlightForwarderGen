@@ -41,11 +41,11 @@ public partial class MainWindow : Window
                 if (copied > 0 || companion.Copied)
                     StatusText.Text = copied == 1
                         ? companion.Copied
-                            ? "Um atalho e o complemento do Switch foram copiados para o cartão SD."
-                            : "Um atalho foi copiado para o cartão SD do Switch."
+                            ? LocalizedText.Get("Main.Status.CopiedOneAndUpdater")
+                            : LocalizedText.Get("Main.Status.CopiedOne")
                         : copied > 1
-                            ? $"{copied} atalhos foram copiados para o cartão SD do Switch."
-                            : companion.Message;
+                            ? LocalizedText.Format("Main.Status.CopiedMany", copied)
+                            : DescribeCompanion(companion);
                 await RefreshLibraryHealthAsync(copied == 0);
                 await RefreshInstalledGamesAsync(false);
                 if (!_setupState.IsCompleted())
@@ -57,7 +57,7 @@ public partial class MainWindow : Window
             catch (Exception exception)
             {
                 AppLog.Error("Falha durante a preparação inicial do Companion.", exception);
-                StatusText.Text = $"Nao foi possivel copiar os atalhos para o cartao SD: {exception.Message}";
+                StatusText.Text = LocalizedText.Format("Main.Status.InitialFailure", exception.Message);
             }
             finally
             {
@@ -87,7 +87,11 @@ public partial class MainWindow : Window
     {
         var health = _sunshineManager.Check();
         var switchSdCard = _moonlightSwitchManager.DetectSdCard();
-        ReadinessText.Text = $"{health.Message} {switchSdCard.Message}";
+        ReadinessText.Text = health.IsReady && switchSdCard.IsDetected
+            ? LocalizedText.Get("Main.Readiness.Ready")
+            : !health.IsReady
+                ? LocalizedText.Get("Main.Readiness.ComputerPending")
+                : LocalizedText.Get("Main.Readiness.SdPending");
     }
 
     private async void PrepareSunshine_Click(object sender, RoutedEventArgs e)
@@ -96,8 +100,8 @@ public partial class MainWindow : Window
         if (!health.IsInstalled)
         {
             var confirmation = MessageBox.Show(
-                "O instalador oficial do Sunshine será baixado e aberto. Deseja continuar?",
-                "Preparar Sunshine",
+                LocalizedText.Get("Main.Sunshine.Confirm"),
+                LocalizedText.Get("Main.Sunshine.Title"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
             if (confirmation != MessageBoxResult.Yes)
@@ -106,16 +110,16 @@ public partial class MainWindow : Window
 
         try
         {
-            StatusText.Text = "Preparando seu computador...";
+            StatusText.Text = LocalizedText.Get("Main.Sunshine.Preparing");
             var result = await _sunshineManager.PrepareAsync();
             StatusText.Text = result.IsReady
-                ? "Seu computador está pronto para preparar jogos."
-                : result.Message;
+                ? LocalizedText.Get("Main.Sunshine.Ready")
+                : result.IsRunning ? LocalizedText.Get("Service.Sunshine.Starting") : LocalizedText.Get("Service.Sunshine.Stopped");
         }
         catch (Exception exception)
         {
             AppLog.Error("Falha ao preparar o Sunshine.", exception);
-            StatusText.Text = exception.Message;
+            StatusText.Text = LocalizedText.Format("Service.GenericFailure", AppLog.LogDirectory);
         }
         finally
         {
@@ -139,7 +143,7 @@ public partial class MainWindow : Window
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = "Executáveis (*.exe)|*.exe|Todos os arquivos (*.*)|*.*"
+            Filter = LocalizedText.Get("Main.Executable.Filter")
         };
 
         if (dialog.ShowDialog() == true)
@@ -156,15 +160,15 @@ public partial class MainWindow : Window
         try
         {
             HideShortcutCreatedState();
-            StatusText.Text = "Preparando jogo...";
+            StatusText.Text = LocalizedText.Get("Main.Game.Preparing");
             var game = await _libraryManager.RegisterAsync(GameNameTextBox.Text, ExecutablePathTextBox.Text, _selectedCoverPath);
             if (game.Status != MFG.Common.Library.GameStatus.SunshineApplicationReady)
             {
-                StatusText.Text = $"'{game.Name}' foi adicionado. Use “Preparar computador” para concluir.";
+                StatusText.Text = LocalizedText.Format("Main.Game.NeedsComputer", game.Name);
                 return;
             }
 
-            StatusText.Text = $"Criando o atalho de '{game.Name}'...";
+            StatusText.Text = LocalizedText.Format("Main.Game.Creating", game.Name);
             game = await _libraryManager.ResolveMoonlightApplicationIdAsync(game.Id);
             var iconPath = await _nspGameIcon.GetPathAsync(_selectedCoverPath, game.Name);
             var result = await _forwarder.GenerateAndDeliverAsync(
@@ -175,40 +179,40 @@ public partial class MainWindow : Window
             await _libraryManager.SyncSdLibraryAsync();
             ShowShortcutCreatedState(game.Name, result.Delivery.CopiedToSdCard);
             StatusText.Text = result.Delivery.CopiedToSdCard
-                ? $"'{game.Name}' está pronto. NSP copiado para: {result.Delivery.SdCardPath}"
-                : $"'{game.Name}' está pronto. NSP salvo em: {result.Delivery.LocalPath}";
+                ? LocalizedText.Format("Main.Game.ReadyOnSd", game.Name, result.Delivery.SdCardPath ?? string.Empty)
+                : LocalizedText.Format("Main.Game.ReadyLocal", game.Name, result.Delivery.LocalPath);
         }
         catch (Exception exception)
         {
             if (exception is SunshineConfigurationAccessException)
             {
                 var confirmation = MessageBox.Show(
-                    "O Windows bloqueou a atualizacao da lista de jogos do Sunshine. Deseja autorizar o MFG a conceder permissao de gravacao apenas na pasta de configuracao do Sunshine?",
-                    "Permissao do Sunshine",
+                    LocalizedText.Get("Main.Sunshine.PermissionConfirm"),
+                    LocalizedText.Get("Main.Sunshine.PermissionTitle"),
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
                 if (confirmation == MessageBoxResult.Yes)
                 {
                     try
                     {
-                        StatusText.Text = "Solicitando permissao do Windows...";
+                        StatusText.Text = LocalizedText.Get("Main.Sunshine.RequestingPermission");
                         await _libraryManager.GrantSunshineConfigurationAccessAsync();
                         var game = await _libraryManager.RegisterAsync(GameNameTextBox.Text, ExecutablePathTextBox.Text, _selectedCoverPath);
-                        StatusText.Text = $"'{game.Name}' foi preparado para o Sunshine.";
+                        StatusText.Text = LocalizedText.Format("Main.Sunshine.GamePrepared", game.Name);
                         return;
                     }
                     catch (Exception repairException)
                     {
                         AppLog.Error("Falha ao reparar permissao da configuracao do Sunshine.", repairException);
-                        StatusText.Text = repairException.Message;
+                        StatusText.Text = LocalizedText.Format("Service.GenericFailure", AppLog.LogDirectory);
                         return;
                     }
                 }
             }
             AppLog.Error("Falha ao preparar jogo.", exception);
             StatusText.Text = exception is IOException
-                ? $"Não foi possível concluir a cópia agora. O MFG tentou automaticamente por alguns segundos; reconecte o cartão e tente novamente. Detalhes em: {AppLog.LogDirectory}"
-                : exception.Message;
+                ? LocalizedText.Format("Main.Game.CopyFailure", AppLog.LogDirectory)
+                : LocalizedText.Format("Service.GenericFailure", AppLog.LogDirectory);
         }
     }
 
@@ -216,16 +220,16 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrWhiteSpace(ExecutablePathTextBox.Text))
         {
-            StatusText.Text = "Selecione um jogo para remover.";
+            StatusText.Text = LocalizedText.Get("Main.Game.SelectToRemove");
             return;
         }
-        if (MessageBox.Show($"Remover '{GameNameTextBox.Text}' do MFG? O NSP será apagado do computador e do cartão SD. Um futuro Instalador MFG também poderá desinstalar o atalho do Switch.",
-                "Remover atalho", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        if (MessageBox.Show(LocalizedText.Format("Main.Game.RemoveConfirm", GameNameTextBox.Text),
+                LocalizedText.Get("Main.Game.RemoveTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
         try
         {
             await _libraryManager.RemoveAsync(ExecutablePathTextBox.Text.Trim());
-            StatusText.Text = $"'{GameNameTextBox.Text}' foi removido da biblioteca e do cartão SD.";
+            StatusText.Text = LocalizedText.Format("Main.Game.Removed", GameNameTextBox.Text);
             GameNameTextBox.Clear();
             ExecutablePathTextBox.Clear();
             await RefreshLibraryHealthAsync(false);
@@ -233,7 +237,7 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             AppLog.Error("Falha ao remover jogo do MFG.", exception);
-            StatusText.Text = exception.Message;
+            StatusText.Text = LocalizedText.Format("Service.GenericFailure", AppLog.LogDirectory);
         }
     }
 
@@ -251,25 +255,25 @@ public partial class MainWindow : Window
     {
         try
         {
-            StatusText.Text = "Atualizando o complemento e a biblioteca do Switch...";
+            StatusText.Text = LocalizedText.Get("Main.Switch.Updating");
             var companion = await _switchCompanionDelivery.EnsureInstalledAsync();
             if (!companion.SdDetected)
             {
-                StatusText.Text = companion.Message;
+                StatusText.Text = LocalizedText.Get("Service.Sd.NotConnected");
                 RefreshReadiness();
                 return;
             }
 
             var library = await _libraryManager.SyncSdLibraryAsync();
             StatusText.Text = companion.Copied
-                ? $"Complemento atualizado em {companion.DestinationPath}. {library.Message} Feche e abra novamente o NRO no Switch."
-                : $"{companion.Message} {library.Message}";
+                ? LocalizedText.Format("Main.Switch.Updated", companion.DestinationPath ?? string.Empty, DescribeLibrarySync(library))
+                : $"{DescribeCompanion(companion)} {DescribeLibrarySync(library)}";
             RefreshReadiness();
         }
         catch (Exception exception)
         {
             AppLog.Error("Falha ao atualizar o complemento do Switch.", exception);
-            StatusText.Text = $"Não foi possível atualizar o Switch: {exception.Message}";
+            StatusText.Text = LocalizedText.Format("Main.Switch.UpdateFailure", exception.Message);
         }
     }
 
@@ -289,11 +293,11 @@ public partial class MainWindow : Window
             if (showResult)
             {
                 AppLog.Info("Busca completa de jogos solicitada.");
-                StatusText.Text = "Procurando jogos instalados...";
+                StatusText.Text = LocalizedText.Get("Main.Search.Searching");
                 SearchProgress.Visibility = Visibility.Visible;
                 progress = new Progress<GameDiscoveryProgress>(update =>
                 {
-                    StatusText.Text = $"Procurando jogos: {update.DirectoriesVisited} pastas, {update.ExecutablesChecked} executaveis verificados, {update.CandidatesFound} jogos candidatos.";
+                    StatusText.Text = LocalizedText.Format("Main.Search.Progress", update.DirectoriesVisited, update.ExecutablesChecked, update.CandidatesFound);
                 });
             }
             var result = await _gameDiscovery.RefreshAsync(showResult, progress);
@@ -317,14 +321,14 @@ public partial class MainWindow : Window
 
             var names = string.Join(", ", _installedGames.Take(5).Select(game => game.Name));
             StatusText.Text = result.Found == 0
-                ? "Nenhum jogo Steam ou Epic instalado foi encontrado."
-                : $"Encontramos {_installedGames.Count} jogos instalados ({result.Added} novos, {result.MetadataUpdated} com metadados atualizados). {names}";
+                ? LocalizedText.Get("Main.Search.None")
+                : LocalizedText.Format("Main.Search.Result", _installedGames.Count, result.Added, result.MetadataUpdated, names);
         }
         catch (Exception exception)
         {
             AppLog.Error("Falha durante a busca de jogos.", exception);
             if (showResult)
-                StatusText.Text = $"Nao foi possivel procurar jogos instalados: {exception.Message}";
+                StatusText.Text = LocalizedText.Format("Main.Search.Failure", exception.Message);
         }
         finally
         {
@@ -356,24 +360,24 @@ public partial class MainWindow : Window
         ExecutablePathTextBox.Text = game.ExecutablePath ?? string.Empty;
         _selectedCoverPath = game.CoverPath;
         StatusText.Text = string.IsNullOrWhiteSpace(game.ExecutablePath)
-            ? $"{game.Name} foi selecionado. Escolha o executavel do jogo para continuar."
-            : $"{game.Name} foi selecionado e esta pronto para ser preparado.";
+            ? LocalizedText.Format("Main.Selection.NeedsExecutable", game.Name)
+            : LocalizedText.Format("Main.Selection.Ready", game.Name);
     }
 
     private void ShowShortcutCreatedState(string gameName, bool copiedToSdCard)
     {
-        ShortcutCreatedTitle.Text = $"Atalho de {gameName} criado";
+        ShortcutCreatedTitle.Text = LocalizedText.Format("Main.Shortcut.Title", gameName);
         ShortcutCreatedDetail.Text = copiedToSdCard
-            ? "Já está no cartão SD e pronto para ser adicionado pelo Switch."
-            : "Foi salvo no computador. Conecte o cartão SD e clique em Atualizar.";
+            ? LocalizedText.Get("Main.Shortcut.OnSd")
+            : LocalizedText.Get("Main.Shortcut.Local");
         ShortcutCreatedBanner.Visibility = Visibility.Visible;
-        PrepareGameButton.Content = "Criar novamente";
+        PrepareGameButton.Content = LocalizedText.Get("Main.CreateAgain");
     }
 
     private void HideShortcutCreatedState()
     {
         ShortcutCreatedBanner.Visibility = Visibility.Collapsed;
-        PrepareGameButton.Content = "Adicionar ao Switch";
+        PrepareGameButton.Content = LocalizedText.Get("Main.AddToSwitch");
     }
 
     private async Task RefreshLibraryHealthAsync(bool showResult)
@@ -385,27 +389,33 @@ public partial class MainWindow : Window
                 return;
             if (checks.Count == 0)
             {
-                StatusText.Text = "Nenhum jogo foi adicionado a biblioteca ainda.";
+                StatusText.Text = LocalizedText.Get("Main.Health.Empty");
                 return;
             }
 
             StatusText.Text = string.Join(Environment.NewLine, checks.Select(check =>
-                $"{check.Game.Name}: executavel {Describe(check.Executable)}, Sunshine {Describe(check.Sunshine)}, Moonlight {Describe(check.MoonlightFavorite)}, NSP {Describe(check.Nsp)}, SD {Describe(check.SdCard)}."));
+                LocalizedText.Format("Main.Health.Line", check.Game.Name, Describe(check.Executable), Describe(check.Sunshine), Describe(check.MoonlightFavorite), Describe(check.Nsp), Describe(check.SdCard))));
         }
         catch (Exception exception)
         {
             AppLog.Error("Falha durante a verificacao da biblioteca.", exception);
-            StatusText.Text = $"Nao foi possivel verificar os jogos: {exception.Message}";
+            StatusText.Text = LocalizedText.Format("Main.Health.Failure", exception.Message);
         }
     }
 
     private static string Describe(MFG.Common.Library.HealthCheckItem item) => item.State switch
     {
-        MFG.Common.Library.HealthCheckState.Ready => "pronto",
-        MFG.Common.Library.HealthCheckState.Unavailable => "indisponivel",
-        MFG.Common.Library.HealthCheckState.Invalid => "invalido",
-        _ => "pendente"
+        MFG.Common.Library.HealthCheckState.Ready => LocalizedText.Get("Health.Ready"),
+        MFG.Common.Library.HealthCheckState.Unavailable => LocalizedText.Get("Health.Unavailable"),
+        MFG.Common.Library.HealthCheckState.Invalid => LocalizedText.Get("Health.Invalid"),
+        _ => LocalizedText.Get("Health.Pending")
     };
+
+    private static string DescribeCompanion(SwitchCompanionDeliveryResult result) =>
+        LocalizedText.Get(result.Copied ? "Service.Updater.Copied" : "Service.Updater.Current");
+
+    private static string DescribeLibrarySync(SdLibrarySyncResult result) =>
+        LocalizedText.Get(!result.SdDetected ? "Service.Sd.NotConnected" : result.Copied == 0 ? "Service.Sd.UpToDate" : "Service.Sd.Synchronized");
 
     private sealed class DiscoveredGameGroup
     {
@@ -421,7 +431,7 @@ public partial class MainWindow : Window
         public IReadOnlyList<DiscoveredGame> Candidates { get; }
         public DiscoveredGame PrimaryCandidate { get; }
         public bool HasAlternatives => Candidates.Count > 1;
-        public string Source => PrimaryCandidate.Source.ToString();
+        public string Source => LocalizedText.Get($"Source.{PrimaryCandidate.Source}");
         public string? CoverPath => PrimaryCandidate.CoverPath;
     }
 }

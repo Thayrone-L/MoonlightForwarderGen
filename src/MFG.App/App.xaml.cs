@@ -9,6 +9,7 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
         AppLog.Initialize();
         DispatcherUnhandledException += (_, exception) => AppLog.Error("Erro nao tratado na interface.", exception.Exception);
         TaskScheduler.UnobservedTaskException += (_, exception) =>
@@ -21,6 +22,22 @@ public partial class App : Application
             if (exception.ExceptionObject is Exception error)
                 AppLog.Error("Erro nao tratado no aplicativo.", error);
         };
+        var languageStore = new LanguageSettingsStore();
+        var language = languageStore.Load();
+        if (language is null)
+        {
+            var selection = new LanguageSelectionWindow();
+            if (selection.ShowDialog() != true)
+            {
+                Shutdown();
+                return;
+            }
+        }
+        else
+        {
+            LanguageSettingsStore.Apply(language);
+        }
+
         try
         {
             await MfgDbContext.InitializeAsync();
@@ -31,5 +48,10 @@ public partial class App : Application
             AppLog.Error("Falha ao iniciar o banco de dados.", exception);
             throw;
         }
+
+        var mainWindow = new MainWindow();
+        MainWindow = mainWindow;
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
+        mainWindow.Show();
     }
 }

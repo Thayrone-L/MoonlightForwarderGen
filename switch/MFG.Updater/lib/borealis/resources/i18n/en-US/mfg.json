@@ -1,0 +1,30 @@
+{
+  "main": {
+    "game_ready": "Ready",
+    "sync_on_computer": "Synchronize on the computer",
+    "library_ready": "Library ready · v{}",
+    "library_needs_sync": "Synchronize on the computer · v{}",
+    "your_games": "Your games",
+    "subtitle": "Choose a game. MFG handles the rest.",
+    "library_missing": "Library not found yet",
+    "library_missing_help": "Connect the SD card to the computer and open MFG. Your games will be copied automatically.",
+    "library_empty": "Your library is empty",
+    "library_empty_help": "Choose a game in the computer application to begin.",
+    "select_hint": "A  Select",
+    "actions_hint": "X  Update     +  Exit",
+    "update": "Update",
+    "exit": "Exit",
+    "all_set": "Everything is ready",
+    "prepare_on_computer": "Prepare your games on the computer and return to the Switch.",
+    "add_to_home": "Add to HOME menu",
+    "ready_description": "Ready to become a shortcut on your Switch.",
+    "sync_game": "Synchronize this game again on the computer.",
+    "confirm_install": "Press A again to confirm installation.",
+    "confirm": "Confirm installation",
+    "installing": "Installing... do not remove the SD card.",
+    "installed": "Installed",
+    "try_again": "Try again",
+    "install_success": "Forwarder installed. Return to the HOME menu to use it.",
+    "install_failed": "Installation failed. Check the MFG Updater log for details."
+  }
+}

@@ -3,11 +3,14 @@
 #include "app_log.hpp"
 
 #include <borealis.hpp>
+#include <switch.h>
 
 #include <cstdlib>
 #include <string>
 
 namespace {
+
+constexpr const char* Version = "0.5.4";
 
 constexpr const char* ManifestPath = "sdmc:/switch/MFG/manifest.json";
 constexpr const char* ForwarderDirectory = "sdmc:/switch/MFG";
@@ -22,6 +25,25 @@ const NVGcolor Muted = nvgRGB(156, 168, 186);
 const NVGcolor Purple = nvgRGB(124, 92, 252);
 const NVGcolor Green = nvgRGB(85, 214, 160);
 const NVGcolor Red = nvgRGB(212, 134, 140);
+
+void add_font_fallback(PlSharedFontType type, const std::string& name) {
+    PlFontData font{};
+    if (R_FAILED(plGetSharedFontByType(&font, type)) ||
+        !brls::Application::loadFontFromMemory(name, font.address, font.size, false))
+        return;
+    const int regular = brls::Application::getFont(brls::FONT_REGULAR);
+    const int fallback = brls::Application::getFont(name);
+    if (regular != brls::FONT_INVALID && fallback != brls::FONT_INVALID)
+        nvgAddFallbackFontId(brls::Application::getNVGContext(), regular, fallback);
+}
+
+void configure_international_fonts() {
+    // Standard already covers Latin, Cyrillic and Japanese on Horizon OS.
+    add_font_fallback(PlSharedFontType_ChineseSimplified, "mfg-zh-hans");
+    add_font_fallback(PlSharedFontType_ExtChineseSimplified, "mfg-zh-hans-ext");
+    add_font_fallback(PlSharedFontType_ChineseTraditional, "mfg-zh-hant");
+    add_font_fallback(PlSharedFontType_KO, "mfg-ko");
+}
 
 brls::Label* make_label(const std::string& text, float size, NVGcolor color) {
     auto* label = new brls::Label();
@@ -74,7 +96,7 @@ class GameRow final : public brls::Box {
         auto* name = make_label(game.name, 19, Text);
         name->setSingleLine(true);
         copy->addView(name);
-        auto* state = make_label(game.hash_valid ? "Pronto" : "Sincronize pelo computador",
+        auto* state = make_label(game.hash_valid ? brls::getStr("mfg/main/game_ready") : brls::getStr("mfg/main/sync_on_computer"),
                                  14, game.hash_valid ? Green : Red);
         state->setMarginTop(2);
         copy->addView(state);
@@ -110,7 +132,7 @@ class MainActivity final : public brls::Activity {
         header->addView(make_label("Moonlight Forwarder", 27, Text));
         auto* header_spacer = new brls::Padding();
         header->addView(header_spacer);
-        auto* ready = make_label(result.ok ? "Biblioteca pronta  ·  v0.5.4" : "Sincronize pelo computador  ·  v0.5.4",
+        auto* ready = make_label(result.ok ? brls::getStr("mfg/main/library_ready", Version) : brls::getStr("mfg/main/library_needs_sync", Version),
                                  16, result.ok ? Green : Red);
         ready->setHorizontalAlign(brls::HorizontalAlign::RIGHT);
         header->addView(ready);
@@ -127,8 +149,8 @@ class MainActivity final : public brls::Activity {
         library->setBackgroundColor(Surface);
         library->setCornerRadius(18);
         library->setPadding(24);
-        library->addView(make_label("Seus jogos", 29, Text));
-        auto* subtitle = make_label("Escolha um jogo. O resto acontece sozinho.", 17, Muted);
+        library->addView(make_label(brls::getStr("mfg/main/your_games"), 29, Text));
+        auto* subtitle = make_label(brls::getStr("mfg/main/subtitle"), 17, Muted);
         subtitle->setMarginTop(5);
         subtitle->setMarginBottom(18);
         library->addView(subtitle);
@@ -138,10 +160,8 @@ class MainActivity final : public brls::Activity {
             empty->setBackgroundColor(Surface);
             empty->setCornerRadius(16);
             empty->setPadding(32);
-            empty->addView(make_label("Biblioteca ainda nao encontrada", 25, Text));
-            auto* explanation = make_label(
-                "Conecte o cartao SD ao computador e abra o MFG. Seus jogos serao copiados automaticamente.",
-                18, Muted);
+            empty->addView(make_label(brls::getStr("mfg/main/library_missing"), 25, Text));
+            auto* explanation = make_label(brls::getStr("mfg/main/library_missing_help"), 18, Muted);
             explanation->setMarginTop(14);
             empty->addView(explanation);
             library->addView(empty);
@@ -150,8 +170,8 @@ class MainActivity final : public brls::Activity {
             empty->setBackgroundColor(Surface);
             empty->setCornerRadius(16);
             empty->setPadding(32);
-            empty->addView(make_label("Sua biblioteca esta vazia", 25, Text));
-            auto* explanation = make_label("Escolha um jogo no aplicativo do computador para comecar.", 18, Muted);
+            empty->addView(make_label(brls::getStr("mfg/main/library_empty"), 25, Text));
+            auto* explanation = make_label(brls::getStr("mfg/main/library_empty_help"), 18, Muted);
             explanation->setMarginTop(14);
             empty->addView(explanation);
             library->addView(empty);
@@ -190,20 +210,20 @@ class MainActivity final : public brls::Activity {
         footer->setPadding(0, 46, 0, 46);
         footer->setAlignItems(brls::AlignItems::CENTER);
         footer->setBackgroundColor(nvgRGB(12, 15, 21));
-        footer->addView(make_label("A  Selecionar", 15, Muted));
+        footer->addView(make_label(brls::getStr("mfg/main/select_hint"), 15, Muted));
         auto* footer_spacer = new brls::Padding();
         footer->addView(footer_spacer);
-        footer->addView(make_label("X  Atualizar     +  Sair", 15, Muted));
+        footer->addView(make_label(brls::getStr("mfg/main/actions_hint"), 15, Muted));
         root->addView(footer);
         return root;
     }
 
     void onContentAvailable() override {
-        registerAction("Atualizar", brls::BUTTON_X, [](brls::View*) {
+        registerAction(brls::getStr("mfg/main/update"), brls::BUTTON_X, [](brls::View*) {
             brls::Application::pushActivity(new MainActivity(), brls::TransitionAnimation::FADE);
             return true;
         }, true);
-        registerAction("Sair", brls::BUTTON_START, [](brls::View*) {
+        registerAction(brls::getStr("mfg/main/exit"), brls::BUTTON_START, [](brls::View*) {
             brls::Application::quit();
             return true;
         }, true);
@@ -239,14 +259,14 @@ class MainActivity final : public brls::Activity {
             selected_cover->setImageFromRes("img/mfg-default.jpg");
         detail->addView(selected_cover);
 
-        selected_title = make_label(has_game ? result.manifest.games[0].name : "Tudo pronto por aqui", 29, Text);
+        selected_title = make_label(has_game ? result.manifest.games[0].name : brls::getStr("mfg/main/all_set"), 29, Text);
         selected_title->setWidth(340);
         selected_title->setMarginTop(18);
         selected_title->setHorizontalAlign(brls::HorizontalAlign::CENTER);
         detail->addView(selected_title);
 
         selected_status = make_label(has_game ? status_for(result.manifest.games[0]) :
-            "Prepare seus jogos no computador e volte ao Switch.", 18, Muted);
+            brls::getStr("mfg/main/prepare_on_computer"), 18, Muted);
         selected_status->setWidth(340);
         selected_status->setMarginTop(12);
         selected_status->setMarginBottom(26);
@@ -254,7 +274,7 @@ class MainActivity final : public brls::Activity {
         detail->addView(selected_status);
 
         install_button = new brls::Button();
-        install_button->setText("Adicionar ao Switch");
+        install_button->setText(brls::getStr("mfg/main/add_to_home"));
         install_button->setStyle(&brls::BUTTONSTYLE_PRIMARY);
         install_button->setWidth(340);
         install_button->setHeight(58);
@@ -267,8 +287,8 @@ class MainActivity final : public brls::Activity {
 
     std::string status_for(const mfg::Forwarder& game) const {
         return game.hash_valid
-            ? "Pronto para virar um atalho no seu Switch."
-            : "Sincronize este jogo novamente no computador.";
+            ? brls::getStr("mfg/main/ready_description")
+            : brls::getStr("mfg/main/sync_game");
     }
 
     void select_game(std::size_t index) {
@@ -281,7 +301,7 @@ class MainActivity final : public brls::Activity {
         selected_title->setText(game.name);
         selected_status->setText(status_for(game));
         selected_status->setTextColor(game.hash_valid ? Muted : Red);
-        install_button->setText("Adicionar ao Switch");
+        install_button->setText(brls::getStr("mfg/main/add_to_home"));
         install_button->setState(game.hash_valid ? brls::ButtonState::ENABLED : brls::ButtonState::DISABLED);
     }
 
@@ -291,28 +311,31 @@ class MainActivity final : public brls::Activity {
         const auto& game = result.manifest.games[selected_index];
         mfg::log::info("Jogo selecionado: " + game.name + " (" + game.title_id + ").");
         if (!game.hash_valid) {
-            brls::Application::notify("Sincronize este jogo novamente no computador.");
+            brls::Application::notify(brls::getStr("mfg/main/sync_game"));
             return true;
         }
         if (!awaiting_confirmation) {
             awaiting_confirmation = true;
-            selected_status->setText("Pressione A novamente para confirmar a instalacao.");
+            selected_status->setText(brls::getStr("mfg/main/confirm_install"));
             selected_status->setTextColor(Purple);
-            install_button->setText("Confirmar instalacao");
+            install_button->setText(brls::getStr("mfg/main/confirm"));
             return true;
         }
 
         awaiting_confirmation = false;
-        selected_status->setText("Instalando... nao remova o cartao SD.");
+        selected_status->setText(brls::getStr("mfg/main/installing"));
         selected_status->setTextColor(Muted);
         install_button->setState(brls::ButtonState::DISABLED);
         const auto install_result = mfg::install_forwarder(
             std::string(ForwarderDirectory) + "/" + game.nsp_file_name, game.title_id);
-        selected_status->setText(install_result.message);
+        const std::string user_message = install_result.ok
+            ? brls::getStr("mfg/main/install_success")
+            : brls::getStr("mfg/main/install_failed");
+        selected_status->setText(user_message);
         selected_status->setTextColor(install_result.ok ? Green : Red);
-        install_button->setText(install_result.ok ? "Instalado" : "Tentar novamente");
+        install_button->setText(install_result.ok ? brls::getStr("mfg/main/installed") : brls::getStr("mfg/main/try_again"));
         install_button->setState(install_result.ok ? brls::ButtonState::DISABLED : brls::ButtonState::ENABLED);
-        brls::Application::notify(install_result.message);
+        brls::Application::notify(user_message);
         return true;
     }
 };
@@ -327,6 +350,8 @@ int main(int, char**) {
         mfg::log::shutdown();
         return EXIT_FAILURE;
     }
+
+    configure_international_fonts();
 
     brls::Application::createWindow("Moonlight Forwarder");
     brls::Application::setGlobalQuit(false);

@@ -30,7 +30,7 @@ public partial class SwitchPreviewWindow : Window
         }
         catch (Exception exception)
         {
-            EmptyLibraryText.Text = $"Não foi possível carregar a prévia: {exception.Message}";
+            EmptyLibraryText.Text = LocalizedText.Format("Preview.LoadFailure", exception.Message);
             EmptyLibraryText.Visibility = Visibility.Visible;
         }
     }

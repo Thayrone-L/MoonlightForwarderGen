@@ -1,0 +1,30 @@
+{
+  "main": {
+    "game_ready": "Pronto",
+    "sync_on_computer": "Sincronize pelo computador",
+    "library_ready": "Biblioteca pronta · v{}",
+    "library_needs_sync": "Sincronize pelo computador · v{}",
+    "your_games": "Seus jogos",
+    "subtitle": "Escolha um jogo. O resto acontece sozinho.",
+    "library_missing": "Biblioteca ainda não encontrada",
+    "library_missing_help": "Conecte o cartão SD ao computador e abra o MFG. Seus jogos serão copiados automaticamente.",
+    "library_empty": "Sua biblioteca está vazia",
+    "library_empty_help": "Escolha um jogo no aplicativo do computador para começar.",
+    "select_hint": "A  Selecionar",
+    "actions_hint": "X  Atualizar     +  Sair",
+    "update": "Atualizar",
+    "exit": "Sair",
+    "all_set": "Tudo pronto por aqui",
+    "prepare_on_computer": "Prepare seus jogos no computador e volte ao Switch.",
+    "add_to_home": "Adicionar ao menu HOME",
+    "ready_description": "Pronto para virar um atalho no seu Switch.",
+    "sync_game": "Sincronize este jogo novamente no computador.",
+    "confirm_install": "Pressione A novamente para confirmar a instalação.",
+    "confirm": "Confirmar instalação",
+    "installing": "Instalando... não remova o cartão SD.",
+    "installed": "Instalado",
+    "try_again": "Tentar novamente",
+    "install_success": "Forwarder instalado. Volte ao menu HOME para usá-lo.",
+    "install_failed": "A instalação falhou. Consulte o log do MFG Updater para mais detalhes."
+  }
+}

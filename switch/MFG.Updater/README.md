@@ -1,15 +1,17 @@
 # MFG Updater para Nintendo Switch
 
+**Português** | [English](README.en.md)
+
 Homebrew responsável por aplicar no console a biblioteca de forwarders preparada pelo
 Moonlight Forwarder Generator.
 
 ## Marco atual
 
-A versão `0.5.0` substitui a interface de console por uma interface gráfica
+A versão `0.5.4` utiliza uma interface gráfica
 acelerada baseada em Borealis, coerente com o aplicativo do computador. Ela:
 
 - abre `SD:/switch/MFG/manifest.json`;
-- aceita apenas o contrato `schemaVersion: 1`;
+- aceita os contratos `schemaVersion: 1` e `schemaVersion: 2`;
 - rejeita nomes de arquivo com navegação de diretório;
 - verifica o SHA-256 completo de cada NSP diretamente no cartão SD;
 - lista os forwarders, arquivos ausentes e remoções solicitadas;

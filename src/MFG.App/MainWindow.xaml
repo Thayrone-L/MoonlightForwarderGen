@@ -43,16 +43,16 @@
     </Grid.RowDefinitions>
 
     <Menu Visibility="Collapsed">
-      <MenuItem Header="_Biblioteca">
-        <MenuItem Header="Visualizar no Switch" Click="OpenSwitchPreview_Click" />
+      <MenuItem Header="{DynamicResource Main.Library}">
+        <MenuItem Header="{DynamicResource Main.SwitchPreview}" Click="OpenSwitchPreview_Click" />
         <Separator />
-        <MenuItem Header="Procurar jogos novamente" Click="RefreshInstalledGames_Click" />
-        <MenuItem Header="Verificar atalhos" Click="RunHealthCheck_Click" />
+        <MenuItem Header="{DynamicResource Main.SearchAgain}" Click="RefreshInstalledGames_Click" />
+        <MenuItem Header="{DynamicResource Main.CheckShortcuts}" Click="RunHealthCheck_Click" />
       </MenuItem>
-      <MenuItem Header="_Configurações">
-        <MenuItem Header="Configuração inicial" Click="OpenSetup_Click" />
+      <MenuItem Header="{DynamicResource Main.Settings}">
+        <MenuItem Header="{DynamicResource Main.InitialSetup}" Click="OpenSetup_Click" />
         <Separator />
-        <MenuItem Header="Abrir pasta de logs" Click="OpenLogs_Click" />
+        <MenuItem Header="{DynamicResource Main.OpenLogs}" Click="OpenLogs_Click" />
       </MenuItem>
     </Menu>
 
@@ -70,19 +70,19 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="3" />
               </Grid.RowDefinitions>
-              <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Text="Biblioteca" />
+              <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Text="{DynamicResource Main.Library}" />
               <Border Grid.Row="1" Width="24" Height="3" Background="{StaticResource AccentBrush}" CornerRadius="2" />
             </Grid>
           </Border>
           <Button Margin="6,0,0,0" Style="{StaticResource TopBarButton}"
-                  Click="OpenSwitchPreview_Click" Content="Preview do Switch" />
+                  Click="OpenSwitchPreview_Click" Content="{DynamicResource Main.SwitchPreview}" />
         </StackPanel>
         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-          <Button Style="{StaticResource TopBarButton}" Click="UpdateSwitch_Click" Content="↻  Atualizar" />
+          <Button Style="{StaticResource TopBarButton}" Click="UpdateSwitch_Click" Content="{DynamicResource Main.Update}" />
           <Border Width="1" Height="20" Margin="8,0" Background="#303847" />
-          <Button Style="{StaticResource TopBarButton}" Click="OpenSetup_Click" Content="Configurações" />
+          <Button Style="{StaticResource TopBarButton}" Click="OpenSetup_Click" Content="{DynamicResource Main.Settings}" />
           <Button Width="38" Padding="0" Style="{StaticResource TopBarButton}" Click="OpenLogs_Click"
-                  Content="•••" ToolTip="Abrir pasta de logs" />
+                  Content="•••" ToolTip="{DynamicResource Main.OpenLogs}" />
         </StackPanel>
       </Grid>
     </Border>
@@ -101,17 +101,17 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <StackPanel>
-          <TextBlock FontSize="30" FontWeight="Bold" Text="Seus jogos no Switch" />
+          <TextBlock FontSize="30" FontWeight="Bold" Text="{DynamicResource Main.Hero.Title}" TextWrapping="Wrap" />
           <TextBlock Margin="0,6,0,0" Foreground="{StaticResource MutedTextBrush}"
-                     FontSize="14" Text="Escolha um jogo. O resto acontece sozinho." />
+                     FontSize="14" Text="{DynamicResource Main.Hero.Subtitle}" TextWrapping="Wrap" />
         </StackPanel>
-        <Border Grid.Column="1" MinWidth="360" MaxWidth="520" VerticalAlignment="Center" Padding="12,7"
+        <Border Grid.Column="1" MaxWidth="520" Margin="18,0,0,0" VerticalAlignment="Center" Padding="12,7"
                 Background="#172B27" BorderBrush="#285044" BorderThickness="1" CornerRadius="14">
           <StackPanel Orientation="Horizontal">
             <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center"
                      Fill="{StaticResource SuccessBrush}" />
             <TextBlock x:Name="ReadinessText" MaxWidth="480" Foreground="#BDEBD9"
-                       TextWrapping="NoWrap" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                       TextWrapping="Wrap" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
           </StackPanel>
         </Border>
       </Grid>
@@ -132,8 +132,8 @@
             </Grid.RowDefinitions>
             <DockPanel Margin="10,8,10,12">
               <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center"
-                         Foreground="{StaticResource MutedTextBrush}" Text="Steam e Epic" />
-              <TextBlock FontSize="17" FontWeight="SemiBold" Text="Biblioteca" />
+                         Foreground="{StaticResource MutedTextBrush}" Text="{DynamicResource Main.Library.Sources}" />
+              <TextBlock FontSize="17" FontWeight="SemiBold" Text="{DynamicResource Main.Library}" />
             </DockPanel>
             <ListBox x:Name="InstalledGamesList" Grid.Row="1" IsEnabled="False"
                      SelectionChanged="InstalledGamesList_SelectionChanged"
@@ -219,7 +219,7 @@
                   </Ellipse>
                 </Grid>
                 <TextBlock Margin="0,14,0,0" Foreground="{StaticResource MutedTextBrush}"
-                           Text="Atualizando sua biblioteca…" />
+                           Text="{DynamicResource Main.Library.Loading}" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
           </Grid>
@@ -239,10 +239,10 @@
                        Stretch="UniformToFill" />
               </Border>
               <TextBlock Margin="0,20,0,0" HorizontalAlignment="Center" FontSize="22" FontWeight="Bold"
-                         Text="{Binding SelectedItem.Name, ElementName=InstalledGamesList, FallbackValue=Escolha um jogo}"
+                         Text="{Binding SelectedItem.Name, ElementName=InstalledGamesList, FallbackValue={DynamicResource Main.SelectGame}}"
                          TextAlignment="Center" TextWrapping="Wrap" />
               <TextBlock x:Name="SelectionHintText" Margin="0,8,0,0" HorizontalAlignment="Center"
-                         Foreground="{StaticResource MutedTextBrush}" Text="Pronto para virar um atalho no seu Switch."
+                         Foreground="{StaticResource MutedTextBrush}" Text="{DynamicResource Main.SelectionHint}"
                          TextAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
 
@@ -262,20 +262,20 @@
                   </Border>
                   <StackPanel Grid.Column="1">
                     <TextBlock x:Name="ShortcutCreatedTitle" Foreground="#BDEBD9" FontWeight="SemiBold"
-                               Text="Atalho criado com sucesso" />
+                               Text="{DynamicResource Main.ShortcutCreated}" TextWrapping="Wrap" />
                     <TextBlock x:Name="ShortcutCreatedDetail" Margin="0,3,0,0" Foreground="#8FD0B8"
                                FontSize="12" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
               </Border>
               <Button x:Name="PrepareGameButton" Height="48" Style="{StaticResource PrimaryButton}" Click="PrepareGame_Click"
-                      Content="Adicionar ao Switch" />
+                      Content="{DynamicResource Main.AddToSwitch}" />
               <Expander Margin="0,12,0,0" Foreground="{StaticResource MutedTextBrush}"
-                        Header="Não encontrou seu jogo?">
+                        Header="{DynamicResource Main.ManualGame}">
                 <StackPanel Margin="0,12,0,0">
-                  <TextBlock Margin="0,0,0,5" Foreground="{StaticResource MutedTextBrush}" Text="Nome" />
+                  <TextBlock Margin="0,0,0,5" Foreground="{StaticResource MutedTextBrush}" Text="{DynamicResource Main.Name}" />
                   <TextBox x:Name="GameNameTextBox" />
-                  <TextBlock Margin="0,10,0,5" Foreground="{StaticResource MutedTextBrush}" Text="Executável" />
+                  <TextBlock Margin="0,10,0,5" Foreground="{StaticResource MutedTextBrush}" Text="{DynamicResource Main.Executable}" />
                   <Grid>
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="*" />
@@ -283,13 +283,13 @@
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="ExecutablePathTextBox" />
                     <Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7"
-                            Click="BrowseExecutable_Click" Content="Escolher" />
+                            Click="BrowseExecutable_Click" Content="{DynamicResource Main.Choose}" />
                   </Grid>
                 </StackPanel>
               </Expander>
               <Button Margin="0,10,0,0" Padding="8" HorizontalAlignment="Center"
                       Background="Transparent" BorderThickness="0" Foreground="#D4868C"
-                      Click="RemoveGame_Click" Content="Remover este atalho" />
+                      Click="RemoveGame_Click" Content="{DynamicResource Main.RemoveShortcut}" />
             </StackPanel>
           </Grid>
         </Border>
@@ -302,7 +302,7 @@
             <ColumnDefinition Width="180" />
           </Grid.ColumnDefinitions>
           <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}"
-                     Text="Preparando sua biblioteca…" TextWrapping="Wrap" />
+                     Text="{DynamicResource Main.Library.Preparing}" TextWrapping="Wrap" />
           <ProgressBar x:Name="SearchProgress" Grid.Column="1" Height="5" Margin="16,0,0,0"
                        VerticalAlignment="Center" Visibility="Collapsed" IsIndeterminate="True"
                        Foreground="{StaticResource AccentBrush}" />

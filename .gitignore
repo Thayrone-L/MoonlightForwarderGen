@@ -7,6 +7,9 @@ switch/**/*.elf
 switch/**/*.map
 switch/**/*.nacp
 switch/**/*.nro
+!switch/MFG.Updater/MFG-Updater.nro
+artifacts/release/
+TestResults/
 
 # IDEs
 .vs/
